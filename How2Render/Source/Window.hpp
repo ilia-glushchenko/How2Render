@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Math.hpp"
-#include <SDL.h>
+#include < SDL.h>
 #include <cstdio>
 
 struct Window
@@ -10,18 +10,16 @@ struct Window
 	SDL_Surface *surface = nullptr;
 };
 
-Window CreateWindow(uint32_t width, uint32_t height)
+inline Window CreateNewWindow(uint32_t width, uint32_t height)
 {
 	Window window = {nullptr, nullptr};
 
-	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
 	{
 		fprintf(stderr, "Could not initialize sdl2: %s\n", SDL_GetError());
-		return {nullptr, nullptr};
+		return window;
 	}
 
-	//Create window
 	window.window = SDL_CreateWindow(
 		"How2Render",
 		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -40,15 +38,15 @@ Window CreateWindow(uint32_t width, uint32_t height)
 	return window;
 }
 
-XMUINT2 GetWindowSize(Window const &window)
-{
-	XMINT2 screenSize = {};
-	SDL_GetWindowSize(window.window, &screenSize.x, &screenSize.y);
-	return {static_cast<uint32_t>(screenSize.x), static_cast<uint32_t>(screenSize.y)};
-}
-
-void DestroyWindow(Window window)
+inline void DestroyWindow(Window window)
 {
 	SDL_DestroyWindow(window.window);
 	SDL_Quit();
+}
+
+inline XMINT2 GetWindowSize(Window const &window)
+{
+	XMINT2 result;
+	SDL_GetWindowSize(window.window, &result.x, &result.y);
+	return result;
 }

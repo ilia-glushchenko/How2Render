@@ -18,12 +18,12 @@ struct InputEvents
 	bool quit;
 };
 
-InputEvents CreateDefaultInputEvents()
+inline InputEvents CreateDefaultInputEvents()
 {
 	return InputEvents{{}, {}, false};
 }
 
-void UpdateInput(InputEvents &events)
+inline void UpdateInput(InputEvents &events)
 {
 	//Since we don't get the events every frame
 	//We need to store the key states, between those frames
@@ -64,7 +64,7 @@ void UpdateInput(InputEvents &events)
 	}
 }
 
-bool IsKeyDown(InputEvents &inputEvents, SDL_Scancode scancode)
+inline bool IsKeyDown(InputEvents const &inputEvents, SDL_Scancode scancode)
 {
 	return inputEvents.keys[scancode] == eKeyState::Press || inputEvents.keys[scancode] == eKeyState::Repeat;
 }
