@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Math.hpp"
 #include <SDL.h>
-#include <glm/glm.hpp>
 
 enum class eKeyState : uint8_t
 {
@@ -14,16 +14,16 @@ enum class eKeyState : uint8_t
 struct InputEvents
 {
 	eKeyState keys[SDL_NUM_SCANCODES];
-	glm::ivec2 mouse;
+	XMINT2 mouse;
 	bool quit;
 };
 
-InputEvents create_defalt_input_events()
+inline InputEvents CreateDefaultInputEvents()
 {
 	return InputEvents{ {}, {0, 0}, false };
 }
 
-void update_input(InputEvents &events)
+inline void UpdateInput(InputEvents &events)
 {
 	//This is a bit dumb but useful when you don't have events every frame
 	for (uint32_t i = 0; i < SDL_NUM_SCANCODES; ++i)
@@ -61,7 +61,7 @@ void update_input(InputEvents &events)
 	}
 }
 
-bool is_key_down(InputEvents& input_events, SDL_Scancode scancode)
+inline bool IsKeyDown(InputEvents const& input_events, SDL_Scancode scancode)
 {
 	return input_events.keys[scancode] == eKeyState::Press || input_events.keys[scancode] == eKeyState::Repeate;
 }
