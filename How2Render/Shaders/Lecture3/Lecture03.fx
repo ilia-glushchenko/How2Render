@@ -1,5 +1,3 @@
-#pragma enable_d3d11_debug_symbols
-
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
@@ -151,7 +149,6 @@ float3 calculate_contact_point(float t, Ray ray)
     return ray.origin + ray.direction * t;
 }
 
-
 float4 PS(PS_INPUT input) : SV_Target
 {
     uint rngState = uint(
@@ -270,7 +267,7 @@ float4 PS(PS_INPUT input) : SV_Target
         ray.origin = manifold.contact_point;
         ray.direction = normalize(manifold.contact_normal + random_unit_vector(rngState));
         color += manifold.material.emissive * throughput;
-        throughput *= manifold.material.albedo * 0.75f;
+        throughput *= manifold.material.albedo;
     }
 
     float3 prev_color = txDiffuse.Sample(samLinear, input.Tex).rgb;

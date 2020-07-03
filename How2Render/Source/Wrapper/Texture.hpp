@@ -12,13 +12,7 @@ struct Texture
 	ID3D11SamplerState *pSamplerLinear;
 };
 
-struct RenderTargets
-{
-	Texture first;
-	Texture second;
-};
-
-void ReleaseTexture(Texture &texture)
+void ReleaseTexture(Texture& texture)
 {
 	if (texture.texture != nullptr)
 	{
@@ -38,11 +32,11 @@ void ReleaseTexture(Texture &texture)
 	}
 }
 
-std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &window)
+std::tuple<bool, Texture> CreateTexture(Context const& context, Window const &window)
 {
 	Texture result{nullptr, nullptr, nullptr};
 
-	glm::ivec2 windowSize = GetWindowSize(window);
+	auto windowSize = GetWindowSize(window);
 
 	D3D11_TEXTURE2D_DESC desc;
 	desc.Width = windowSize.x;
@@ -57,7 +51,7 @@ std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &wi
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = 0;
 
-	auto hr = app.pd3dDevice->CreateTexture2D(&desc, NULL, &result.texture);
+	auto hr = context.pd3dDevice->CreateTexture2D(&desc, NULL, &result.texture);
 	if (FAILED(hr))
 	{
 		printf("Failed to create texture.");
@@ -69,7 +63,7 @@ std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &wi
 	SRVDesc.Format = desc.Format;
 	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 	SRVDesc.Texture2D.MipLevels = desc.MipLevels;
-	if (FAILED(app.pd3dDevice->CreateShaderResourceView(result.texture, &SRVDesc, &result.shaderResourceView)))
+	if (FAILED(context.pd3dDevice->CreateShaderResourceView(result.texture, &SRVDesc, &result.shaderResourceView)))
 	{
 		printf("Failed to create shader resource view");
 		ReleaseTexture(result);
@@ -80,7 +74,7 @@ std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &wi
 	RTVDesc.Format = desc.Format;
 	RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 	RTVDesc.Texture2D.MipSlice = 0;
-	if (FAILED(app.pd3dDevice->CreateRenderTargetView(result.texture, &RTVDesc, &result.renderTargetView)))
+	if (FAILED(context.pd3dDevice->CreateRenderTargetView(result.texture, &RTVDesc, &result.renderTargetView)))
 	{
 		printf("Failed to create render target view.");
 		ReleaseTexture(result);
@@ -95,7 +89,7 @@ std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &wi
 	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 	sampDesc.MinLOD = 0;
 	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = app.pd3dDevice->CreateSamplerState(&sampDesc, &result.pSamplerLinear);
+	hr = context.pd3dDevice->CreateSamplerState(&sampDesc, &result.pSamplerLinear);
 	if (FAILED(hr))
 	{
 		printf("Failed to create render target view.");
@@ -105,3 +99,4 @@ std::tuple<bool, Texture> CreateTexture(Application const &app, Window const &wi
 
 	return {true, result};
 }
+

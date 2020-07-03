@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm\glm.hpp>
+#include <DirectXMath.h>
 #include <SDL.h>
 #include <stdio.h>
 
@@ -16,7 +16,7 @@ inline Window CreateNewWindow(uint32_t width, uint32_t height)
 	
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
 	{
-		fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
+		fprintf(stderr, "Could not initialize sdl2: %s\n", SDL_GetError());
 		return window;
 	}
 
@@ -27,7 +27,7 @@ inline Window CreateNewWindow(uint32_t width, uint32_t height)
 		SDL_WINDOW_SHOWN);
 	if (window.window == nullptr)
 	{
-		fprintf(stderr, "could not create window: %s\n", SDL_GetError());
+		fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
 		return window;
 	}
 
@@ -44,9 +44,9 @@ inline void DestroyWindow(Window window)
 	SDL_Quit();
 }
 
-inline glm::ivec2 GetWindowSize(Window const& window)
+inline DirectX::XMINT2 GetWindowSize(Window const& window)
 {
-	glm::ivec2 result;
+	DirectX::XMINT2 result;
 	SDL_GetWindowSize(window.window, &result.x, &result.y);
 	return result;
 }

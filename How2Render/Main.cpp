@@ -1,94 +1,106 @@
-#define GLM_FORCE_LEFT_HANDED
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define GLM_FORCE_SIMD_AVX2
-
+#include "Wrapper/Texture.hpp"
+#include "Wrapper/VertexBuffer.hpp"
+#include "Wrapper/ConstantBuffer.hpp"
 #include "Window.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
 #include "Application.hpp"
-#include "Texture.hpp"
-
-#include <glm/glm.hpp>
-#include <SDL.h>
-#include <SDL_syswm.h>
+#include "Math.hpp"
 
 #include <directxcolors.h>
-#include <d3d11_4.h>
-#include <cstdio>
-#include <tuple>
+#include <d3d11.h>
 
-RenderTargets CreateRenderTargets(Application const& app, Window const& window)
+struct RenderTargets
 {
-	auto [aTextureResult, aTexture] = CreateTexture(app, window);
+	Texture first;
+	Texture second;
+};
+
+RenderTargets CreateRenderTargets(Context const& context, Window const& window)
+{
+	auto [aTextureResult, aTexture] = CreateTexture(context, window);
 	assert(aTextureResult);
 
-	auto [bTextureResult, bTexture] = CreateTexture(app, window);
+	auto [bTextureResult, bTexture] = CreateTexture(context, window);
 	assert(bTextureResult);
 
 	return {aTexture, bTexture};
 }
 
-void Render(Application const &app, Camera const& camera, RenderTargets const& targets, ConstantBuffer const& cb, bool clearPrev)
+void Render(
+	VertexBuffer const& buffer,
+	HostConstantBuffer const& constantBuffer, 
+	Application const& app,
+	RenderTargets const& targets, 
+	Camera const& camera, 
+	bool clearRenderTarget
+)
 {
-	Texture const& currentFrameTarget = cb.frameCount % 2 == 1 ? targets.first : targets.second;
-	Texture const& prevFrameTarget = cb.frameCount % 2 == 0 ? targets.first : targets.second;
+	Texture const& currentFrameTarget = constantBuffer.frameCount % 2 == 1 ? targets.first : targets.second;
+	Texture const& prevFrameTarget = constantBuffer.frameCount % 2 == 0 ? targets.first : targets.second;
 
 	// Clear the back buffer
-	if (clearPrev) {
-		app.pImmediateContext->ClearRenderTargetView(prevFrameTarget.renderTargetView, DirectX::Colors::MidnightBlue);
+	if (clearRenderTarget) {
+		app.context.pImmediateContext->ClearRenderTargetView(
+			prevFrameTarget.renderTargetView, DirectX::Colors::Black);
 	}
-	app.pImmediateContext->OMSetRenderTargets(1, &currentFrameTarget.renderTargetView, nullptr);
-	app.pImmediateContext->ClearRenderTargetView(currentFrameTarget.renderTargetView, DirectX::Colors::MidnightBlue);
+	app.context.pImmediateContext->OMSetRenderTargets(
+		1, &currentFrameTarget.renderTargetView, nullptr);
+	app.context.pImmediateContext->ClearRenderTargetView(
+		currentFrameTarget.renderTargetView, DirectX::Colors::Black);
 
 	// Update variables
-	app.pImmediateContext->UpdateSubresource(app.pConstantBuffer, 0, nullptr, &cb, 0, 0);
+	app.context.pImmediateContext->UpdateSubresource(
+		app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
 
 	// Render a triangle
-	app.pImmediateContext->VSSetShader(app.pVertexShader, nullptr, 0);
-	app.pImmediateContext->PSSetShader(app.pPixelShader, nullptr, 0);
-	app.pImmediateContext->PSSetConstantBuffers(0, 1, &app.pConstantBuffer);
+	app.context.pImmediateContext->VSSetShader(app.shaders.pVertexShader, nullptr, 0);
+	app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
+	app.context.pImmediateContext->PSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
 	
-	app.pImmediateContext->PSSetSamplers(0, 1, &prevFrameTarget.pSamplerLinear);
-	app.pImmediateContext->PSSetShaderResources(0, 1, &prevFrameTarget.shaderResourceView);
+	app.context.pImmediateContext->PSSetSamplers(0, 1, &prevFrameTarget.pSamplerLinear);
+	app.context.pImmediateContext->PSSetShaderResources(0, 1, &prevFrameTarget.shaderResourceView);
 	
-	app.pImmediateContext->Draw(3, 0);
+	app.context.pImmediateContext->Draw(3, 0);
 	ID3D11ShaderResourceView* const pSRV[1] = { nullptr };
-	app.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
+	app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
 	
-	app.pImmediateContext->CopyResource(app.pBackBuffer, currentFrameTarget.texture);
-
 	// Present the information rendered to the back buffer to the front buffer (the screen)
-	app.pSwapChain->Present(0, 0);
+	app.context.pImmediateContext->CopyResource(app.swapchain.pBackBuffer, currentFrameTarget.texture);
+	app.swapchain.pSwapChain->Present(0, 0);
 }
 
 int main(int argc, char *args[])
 {
 	Window window = CreateNewWindow(640, 640);
 	Camera camera = CreateDefaultCamera();
-	ConstantBuffer cb;
-	cb.frameCount = 1;
-	cb.screenWidth = 640;
-	cb.screenHeight = 640;
-
-	auto [appResult, app] = CreateApplication(window);
-	if (!appResult)
-	{
-		printf("Failed to create application");
-		return -1;
-	}
-	auto renderTargets = CreateRenderTargets(app, window);
-
 	InputEvents inputEvents = CreateDefaultInputEvents();
+	Application application = CreateApplication(window);
+	VertexBuffer vertexBuffer = CreateVertexBuffer(application.context);
+	RenderTargets renderTargets = CreateRenderTargets(application.context, window);
+	
+	HostConstantBuffer constBuffer;
+	constBuffer.frameCount = 1;
+	constBuffer.screenWidth = 640;
+	constBuffer.screenHeight = 640;
+
 	while (!inputEvents.quit)
 	{
 		UpdateInput(inputEvents);
-		bool clearPrev = UpdateCamera(camera, inputEvents, window);
-		cb.frameCount = clearPrev ? 1 : cb.frameCount;
-		cb.view = XMMatrixTranspose(DirectX::XMMATRIX(&camera.view[0][0]));
+		bool const clearRenderTarget = UpdateCamera(camera, inputEvents, window);
+		constBuffer.frameCount = clearRenderTarget ? 1 : constBuffer.frameCount;
+		constBuffer.view = XMMatrixTranspose(camera.view);
 
-		Render(app, camera, renderTargets, cb, clearPrev);
+		Render(
+			vertexBuffer, 
+			constBuffer, 
+			application, 
+			renderTargets, 
+			camera, 
+			clearRenderTarget
+		);
 
-		cb.frameCount++;
+		constBuffer.frameCount++;
 	}
 
 	DestroyWindow(window);

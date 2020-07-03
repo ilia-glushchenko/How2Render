@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Math.hpp"
 #include <SDL.h>
-#include <glm/glm.hpp>
 
 enum class eKeyState : uint8_t
 {
@@ -14,7 +14,7 @@ enum class eKeyState : uint8_t
 struct InputEvents
 {
 	eKeyState keys[SDL_NUM_SCANCODES];
-	glm::ivec2 mouse;
+	XMINT2 mouse;
 	bool quit;
 };
 
