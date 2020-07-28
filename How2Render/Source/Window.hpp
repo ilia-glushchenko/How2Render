@@ -13,7 +13,7 @@ struct Window
 inline Window CreateNewWindow(uint32_t width, uint32_t height)
 {
 	Window window{ nullptr, nullptr };
-	
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
 	{
 		fprintf(stderr, "Could not initialize sdl2: %s\n", SDL_GetError());

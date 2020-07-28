@@ -12,11 +12,11 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{001bedfe-84ff-4c30-8d6a-429eeef32e43}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Lecture3">
-      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Wrapper">
       <UniqueIdentifier>{ba347936-f75a-4e6d-b356-561b26e120b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Lecture4">
+      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -49,9 +49,6 @@
     <ClInclude Include="Swapchain.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Context.hpp">
-      <Filter>Header Files\Wrapper</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
@@ -61,16 +58,34 @@
     <ClInclude Include="Source\Math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Wrapper\Context.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SphereMesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\MipmapGenerator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\BitmapImage.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Sampler.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SinCosTable.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Lecture3\Lecture03.fx">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04_PS.hlsl">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_PS.hlsl">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04_VS.hlsl">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_VS.hlsl">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04.fx">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
