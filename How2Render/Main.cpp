@@ -1,78 +1,94 @@
 #include "Wrapper/Texture.hpp"
-#include "Wrapper/VertexBuffer.hpp"
+#include "Wrapper/Sampler.hpp"
 #include "Wrapper/ConstantBuffer.hpp"
 #include "Window.hpp"
 #include "Camera.hpp"
 #include "Input.hpp"
 #include "Application.hpp"
 #include "Math.hpp"
+#include "BitmapImage.hpp"
+#include "MipmapGenerator.hpp"
+#include "SphereMesh.hpp"
 
 #include <directxcolors.h>
-#include <d3d11.h>
 
-struct RenderTargets
+struct RenderObject
 {
-	Texture first;
-	Texture second;
+	Mesh mesh;
+	Texture texture;
+	ID3D11SamplerState *sampler;
 };
 
-RenderTargets CreateRenderTargets(Context const &context, Window const &window)
+RenderObject CreateRenderObject(Context const& context)
 {
-	auto [aTextureResult, aTexture] = CreateTexture(context, window);
-	assert(aTextureResult);
+	auto[loadResult, image] = LoadBitmapImage("Images/earth.bmp");
+	assert(loadResult);
 
-	auto [bTextureResult, bTexture] = CreateTexture(context, window);
-	assert(bTextureResult);
+    GenerateMipmap(image);
 
-	return {aTexture, bTexture};
+	auto[textureResult, texture] = CreateTexture(context, image);
+	assert(textureResult);
+
+	CleanupImage(image);
+
+	auto [sphereResult, mesh] = GenerateSphere(context, 10.f, 64, 64);
+	assert(sphereResult);
+
+	auto sampler = CreateSampler(context, eFilterType::Trilinear);
+	return {mesh, texture, sampler};
 }
 
-void ReleaseRenderTargets(RenderTargets &rt)
+void CleanupRenderObject(RenderObject& renderObject)
 {
-	ReleaseTexture(rt.first);
-	ReleaseTexture(rt.second);
+	CleanupMesh(renderObject.mesh);
+	ReleaseTexture(renderObject.texture);
+
+	if (renderObject.sampler)
+	{
+		renderObject.sampler->Release();
+		renderObject.sampler = nullptr;
+	}
 }
 
 void Render(
-	VertexBuffer const &buffer,
-	HostConstantBuffer const &constantBuffer,
-	Application const &app,
-	RenderTargets const &targets,
-	Camera const &camera,
-	bool clearRenderTarget)
+	HostConstantBuffer const& constantBuffer,
+	Application const& app,
+	Camera const& camera,
+	RenderObject const& renderObject,
+	bool clearRenderTarget
+)
 {
-	Texture const &currentFrameTarget = constantBuffer.frameCount % 2 == 1 ? targets.first : targets.second;
-	Texture const &prevFrameTarget = constantBuffer.frameCount % 2 == 0 ? targets.first : targets.second;
-
-	// Clear the back buffer
 	if (clearRenderTarget)
 	{
-		app.context.pImmediateContext->ClearRenderTargetView(
-			prevFrameTarget.renderTargetView, DirectX::Colors::Black);
+		app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView,
+			DirectX::Colors::AliceBlue);
 	}
-	app.context.pImmediateContext->OMSetRenderTargets(
-		1, &currentFrameTarget.renderTargetView, nullptr);
-	app.context.pImmediateContext->ClearRenderTargetView(
-		currentFrameTarget.renderTargetView, DirectX::Colors::Black);
 
 	// Update variables
 	app.context.pImmediateContext->UpdateSubresource(
 		app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
 
-	// Render a triangle
+	// Setup vertex/pixel shader and bind sampler/texture
 	app.context.pImmediateContext->VSSetShader(app.shaders.pVertexShader, nullptr, 0);
+	app.context.pImmediateContext->VSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
 	app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
-	app.context.pImmediateContext->PSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
+	app.context.pImmediateContext->PSSetSamplers(0, 1, &renderObject.sampler);
+	app.context.pImmediateContext->PSSetShaderResources(0, 1, &renderObject.texture.shaderResourceView);
 
-	app.context.pImmediateContext->PSSetSamplers(0, 1, &prevFrameTarget.pSamplerLinear);
-	app.context.pImmediateContext->PSSetShaderResources(0, 1, &prevFrameTarget.shaderResourceView);
+	constexpr uint32_t stride = sizeof(Vertex);
+	constexpr uint32_t offset = 0;
+	const Mesh& sphere = renderObject.mesh;
 
-	app.context.pImmediateContext->Draw(3, 0);
-	ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
+	// Render sphere
+	app.context.pImmediateContext->IASetVertexBuffers(0, 1, &sphere.vertexBuffer, &stride, &offset);
+	app.context.pImmediateContext->IASetIndexBuffer(sphere.indexBuffer, sphere.indexFormat, 0);
+	app.context.pImmediateContext->IASetPrimitiveTopology(sphere.topology);
+	app.context.pImmediateContext->DrawIndexed(sphere.numIndices, 0, 0);
+
+	ID3D11ShaderResourceView* const pSRV[1] = {nullptr};
 	app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
 
 	// Present the information rendered to the back buffer to the front buffer (the screen)
-	app.context.pImmediateContext->CopyResource(app.swapchain.pBackBuffer, currentFrameTarget.texture);
 	app.swapchain.pSwapChain->Present(0, 0);
 }
 
@@ -82,34 +98,29 @@ int main(int argc, char *args[])
 	Camera camera = CreateDefaultCamera();
 	InputEvents inputEvents = CreateDefaultInputEvents();
 	Application application = CreateApplication(window);
-	VertexBuffer vertexBuffer = CreateVertexBuffer(application.context);
-	RenderTargets renderTargets = CreateRenderTargets(application.context, window);
+	RenderObject renderObject = CreateRenderObject(application.context);
 
+	XMMATRIX world = XMMatrixRotationY(XMConvertToRadians(-230.f)); // Look at Europe
+	constexpr float fov = XMConvertToRadians(45.f);
+	XMMATRIX proj = XMMatrixPerspectiveFovLH(fov, 1.f, 0.1f, 100.f);
 	HostConstantBuffer constBuffer;
-	constBuffer.frameCount = 1;
-	constBuffer.screenWidth = 640;
-	constBuffer.screenHeight = 640;
 
 	while (!inputEvents.quit)
 	{
 		UpdateInput(inputEvents);
-		bool const clearRenderTarget = UpdateCamera(camera, inputEvents, window);
-		constBuffer.frameCount = clearRenderTarget ? 1 : constBuffer.frameCount;
-		constBuffer.view = XMMatrixTranspose(camera.view);
+		UpdateCamera(camera, inputEvents, window);
+        constBuffer.worldViewProj = world * camera.view * proj;
 
 		Render(
-			vertexBuffer,
 			constBuffer,
 			application,
-			renderTargets,
 			camera,
-			clearRenderTarget);
-
-		constBuffer.frameCount++;
+			renderObject,
+			true
+		);
 	}
 
-	ReleaseRenderTargets(renderTargets);
-	CleanupBuffer(vertexBuffer);
+	CleanupRenderObject(renderObject);
 	CleanupApplication(application);
 	DestroyWindow(window);
 

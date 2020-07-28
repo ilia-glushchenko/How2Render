@@ -99,24 +99,29 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Context.hpp" />
     <ClInclude Include="Source\Application.hpp" />
     <ClInclude Include="Source\Camera.hpp" />
+    <ClInclude Include="Source\MipmapGenerator.hpp" />
+    <ClInclude Include="Source\BitmapImage.hpp" />
     <ClInclude Include="Source\Math.hpp" />
     <ClInclude Include="Source\Input.hpp" />
+    <ClInclude Include="Source\SinCosTable.hpp" />
+    <ClInclude Include="Source\SphereMesh.hpp" />
     <ClInclude Include="Source\Window.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />
+    <ClInclude Include="Source\Wrapper\Context.hpp" />
+    <ClInclude Include="Source\Wrapper\Sampler.hpp" />
     <ClInclude Include="Source\Wrapper\Shader.hpp" />
     <ClInclude Include="Source\Wrapper\Texture.hpp" />
     <ClInclude Include="Source\Wrapper\VertexBuffer.hpp" />
     <ClInclude Include="Swapchain.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Lecture3\Lecture03.fx">
+    <FxCompile Include="Shaders\Lecture4\Lecture04.fx">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_PS.hlsl">
+    <FxCompile Include="Shaders\Lecture4\Lecture04_PS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
@@ -124,7 +129,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_VS.hlsl">
+    <FxCompile Include="Shaders\Lecture4\Lecture04_VS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>

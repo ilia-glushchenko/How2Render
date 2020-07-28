@@ -24,7 +24,7 @@ inline Camera CreateDefaultCamera()
 		XMMatrixIdentity(), //view
 		XMMatrixIdentity(), //model
 
-		XMVECTOR{0, 0, 0, 1},	//position
+		XMVECTOR{0, 0, -40, 1},	//position
 		XMVECTOR{0, 0, -1}, //forward
 		XMVECTOR{0, 1, 0},	//up
 

@@ -53,8 +53,8 @@ inline Shaders CreateShaders(Context &context)
 	Shaders shaders;
 
 	// Compile the vertex shader
-	ID3DBlob *pVSBlob = nullptr;
-	auto hr = CompileShaderFromFile(L"Shaders/Lecture3/Lecture03.fx", "VS", "vs_4_0", &pVSBlob);
+	ID3DBlob* pVSBlob = nullptr;
+	auto hr = CompileShaderFromFile(L"Shaders/Lecture4/Lecture04.fx", "VS", "vs_4_0", &pVSBlob);
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
@@ -76,7 +76,8 @@ inline Shaders CreateShaders(Context &context)
 	D3D11_INPUT_ELEMENT_DESC layout[] =
 		{
 			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		};
 	UINT numElements = ARRAYSIZE(layout);
 
@@ -93,8 +94,8 @@ inline Shaders CreateShaders(Context &context)
 	context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
 
 	// Compile the pixel shader
-	ID3DBlob *pPSBlob = nullptr;
-	hr = CompileShaderFromFile(L"Shaders/Lecture3/Lecture03.fx", "PS", "ps_4_0", &pPSBlob);
+	ID3DBlob* pPSBlob = nullptr;
+	hr = CompileShaderFromFile(L"Shaders/Lecture4/Lecture04.fx", "PS", "ps_4_0", &pPSBlob);
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
