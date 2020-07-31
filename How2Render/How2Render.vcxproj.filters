@@ -12,11 +12,14 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{001bedfe-84ff-4c30-8d6a-429eeef32e43}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Lecture3">
-      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Wrapper">
       <UniqueIdentifier>{ba347936-f75a-4e6d-b356-561b26e120b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Lecture4">
+      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Helpers">
+      <UniqueIdentifier>{7f5cc27c-cc09-4114-8b4d-e47a967ef928}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -40,16 +43,10 @@
     <ClInclude Include="Source\Application.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Wrapper\Texture.hpp">
-      <Filter>Header Files\Wrapper</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Wrapper\Shader.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
     <ClInclude Include="Swapchain.hpp">
-      <Filter>Header Files\Wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="Context.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp">
@@ -61,16 +58,49 @@
     <ClInclude Include="Source\Math.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Wrapper\Context.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Sampler.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Texture.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderObject.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Mesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\MipmapGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Material.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Lecture3\Lecture03.fx">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04_PS.hlsl">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_PS.hlsl">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04_VS.hlsl">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture3\Lecture03_VS.hlsl">
-      <Filter>Shaders\Lecture3</Filter>
+    <FxCompile Include="Shaders\Lecture4\Lecture04.fx">
+      <Filter>Shaders\Lecture4</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

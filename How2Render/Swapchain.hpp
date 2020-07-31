@@ -19,7 +19,7 @@ inline Swapchain CreateSwapchain(Window const& window, Context const& context)
 {
 	Swapchain swapchain;
 
-	glm::vec2 const windowSize = GetWindowSize(window);
+	auto const windowSize = GetWindowSize(window);
 	SDL_SysWMinfo sysWMInfo;
 	SDL_VERSION(&sysWMInfo.version);
 	SDL_GetWindowWMInfo(window.window, &sysWMInfo);

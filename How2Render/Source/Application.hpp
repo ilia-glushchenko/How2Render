@@ -5,27 +5,32 @@
 #include "Wrapper/Shader.hpp"
 #include "Window.hpp"
 
-struct Application
+namespace h2r
 {
-	Context context;
-	Swapchain swapchain;
-	Shaders shaders;
-};
 
-inline Application CreateApplication(Window& window)
-{
-	Application app;
+	struct Application
+	{
+		Context context;
+		Swapchain swapchain;
+		Shaders shaders;
+	};
 
-	app.context = CreateContext();
-	app.swapchain = CreateSwapchain(window, app.context);
-	app.shaders = CreateShaders(app.context);
+	inline Application CreateApplication(Window &window)
+	{
+		Application app;
 
-	return app;
-}
+		app.context = CreateContext();
+		app.swapchain = CreateSwapchain(window, app.context);
+		app.shaders = CreateShaders(app.context);
 
-void CleanupApplication(Application &application)
-{
-	CleanupContext(application.context);
-	CleanupSwapchain(application.swapchain);
-	CleanupShaders(application.shaders);
-}
+		return app;
+	}
+
+	inline void CleanupApplication(Application &application)
+	{
+		CleanupContext(application.context);
+		CleanupSwapchain(application.swapchain);
+		CleanupShaders(application.shaders);
+	}
+
+} // namespace h2r

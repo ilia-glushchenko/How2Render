@@ -1,102 +1,99 @@
 #pragma once
 
-#include "Application.hpp"
+#include "Wrapper/Context.hpp"
+
 #include <d3d11.h>
+#include <vector>
 #include <tuple>
 
-struct Texture
+namespace h2r
 {
-	ID3D11Texture2D *texture;
-	ID3D11ShaderResourceView *shaderResourceView;
-	ID3D11RenderTargetView *renderTargetView;
-	ID3D11SamplerState *pSamplerLinear;
-};
 
-void ReleaseTexture(Texture& texture)
-{
-	if (texture.texture != nullptr)
+	struct HostTextureMipLevel
 	{
-		texture.texture->Release();
-	}
-	if (texture.shaderResourceView != nullptr)
-	{
-		texture.shaderResourceView->Release();
-	}
-	if (texture.renderTargetView != nullptr)
-	{
-		texture.renderTargetView->Release();
-	}
-	if (texture.pSamplerLinear != nullptr)
-	{
-		texture.pSamplerLinear->Release();
-	}
-}
+		uint32_t width;
+		uint32_t height;
+		uint32_t lodIndex;
+		uint32_t byteSize;
+		uint8_t *data;
+	};
 
-std::tuple<bool, Texture> CreateTexture(Context const& context, Window const &window)
-{
-	Texture result{nullptr, nullptr, nullptr};
-
-	auto windowSize = GetWindowSize(window);
-
-	D3D11_TEXTURE2D_DESC desc;
-	desc.Width = windowSize.x;
-	desc.Height = windowSize.y;
-	desc.MipLevels = 1;
-	desc.ArraySize = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = 0;
-
-	auto hr = context.pd3dDevice->CreateTexture2D(&desc, NULL, &result.texture);
-	if (FAILED(hr))
+	struct HostTexture
 	{
-		printf("Failed to create texture.");
-		ReleaseTexture(result);
-		return {false, result};
+		uint8_t *pixels = nullptr;
+		uint32_t width = 0;
+		uint32_t height = 0;
+		std::vector<HostTextureMipLevel> mipChain;
+		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
+	};
+
+	struct DeviceTexture
+	{
+		ID3D11Texture2D *texture;
+		ID3D11ShaderResourceView *shaderResourceView;
+	};
+
+	inline void ReleaseTexture(DeviceTexture& texture)
+	{
+		if (texture.texture != nullptr)
+		{
+			texture.texture->Release();
+		}
+		if (texture.shaderResourceView != nullptr)
+		{
+			texture.shaderResourceView->Release();
+		}
 	}
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-	SRVDesc.Format = desc.Format;
-	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	SRVDesc.Texture2D.MipLevels = desc.MipLevels;
-	if (FAILED(context.pd3dDevice->CreateShaderResourceView(result.texture, &SRVDesc, &result.shaderResourceView)))
+	inline std::tuple<bool, DeviceTexture> CreateTexture(Context const& context, HostTexture const& image)
 	{
-		printf("Failed to create shader resource view");
-		ReleaseTexture(result);
-		return {false, result};
+		D3D11_TEXTURE2D_DESC desc;
+
+		desc.Width = image.width;
+		desc.Height = image.height;
+		desc.MipLevels = (UINT)image.mipChain.size();
+		desc.ArraySize = 1;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+		desc.CPUAccessFlags = 0;
+		desc.MiscFlags = 0;
+
+		std::vector<D3D11_SUBRESOURCE_DATA> textureData;
+		for (const auto& mipLevel : image.mipChain)
+		{
+			D3D11_SUBRESOURCE_DATA subData;
+			subData.pSysMem = mipLevel.data;
+			subData.SysMemPitch = mipLevel.width * sizeof(RGBQUAD);
+			subData.SysMemSlicePitch = 0;
+			textureData.push_back(subData);
+		}
+
+		DeviceTexture result{ nullptr, nullptr };
+
+		auto hr = context.pd3dDevice->CreateTexture2D(&desc, textureData.data(), &result.texture);
+		if (FAILED(hr))
+		{
+			printf("Failed to create texture.");
+			ReleaseTexture(result);
+			return { false, result };
+		}
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc ={};
+		SRVDesc.Format = desc.Format;
+		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		SRVDesc.Texture2D.MipLevels = desc.MipLevels;
+
+		if (FAILED(context.pd3dDevice->CreateShaderResourceView(result.texture, &SRVDesc, &result.shaderResourceView)))
+		{
+			printf("Failed to create shader resource view");
+			ReleaseTexture(result);
+			return { false, result };
+		}
+
+		return { true, result };
 	}
 
-	D3D11_RENDER_TARGET_VIEW_DESC RTVDesc = {};
-	RTVDesc.Format = desc.Format;
-	RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	RTVDesc.Texture2D.MipSlice = 0;
-	if (FAILED(context.pd3dDevice->CreateRenderTargetView(result.texture, &RTVDesc, &result.renderTargetView)))
-	{
-		printf("Failed to create render target view.");
-		ReleaseTexture(result);
-		return {false, result};
-	}
-
-	D3D11_SAMPLER_DESC sampDesc = {};
-	sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-	sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-	sampDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-	sampDesc.MinLOD = 0;
-	sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
-	hr = context.pd3dDevice->CreateSamplerState(&sampDesc, &result.pSamplerLinear);
-	if (FAILED(hr))
-	{
-		printf("Failed to create render target view.");
-		ReleaseTexture(result);
-		return {false, result};
-	}
-
-	return {true, result};
-}
-
+} // namespace h2r

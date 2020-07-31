@@ -3,7 +3,7 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
-namespace math
+namespace h2r::math
 {
 	inline DirectX::XMMATRIX CreateCameraMatrix(DirectX::XMVECTOR pos, float yaw, float pitch)
 	{
@@ -19,4 +19,3 @@ namespace math
 			* DirectX::XMMatrixRotationX(-pitch);
 	}
 }
-
