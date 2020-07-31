@@ -12,7 +12,7 @@ struct Texture
 	ID3D11SamplerState *pSamplerLinear;
 };
 
-void ReleaseTexture(Texture& texture)
+void ReleaseTexture(Texture &texture)
 {
 	if (texture.texture != nullptr)
 	{
@@ -32,7 +32,7 @@ void ReleaseTexture(Texture& texture)
 	}
 }
 
-std::tuple<bool, Texture> CreateTexture(Context const& context, Window const &window)
+std::tuple<bool, Texture> CreateTexture(Context const &context, Window const &window)
 {
 	Texture result{nullptr, nullptr, nullptr};
 
@@ -99,4 +99,3 @@ std::tuple<bool, Texture> CreateTexture(Context const& context, Window const &wi
 
 	return {true, result};
 }
-

@@ -8,21 +8,21 @@
 
 struct Shaders
 {
-	ID3D11VertexShader* pVertexShader = nullptr;
-	ID3D11PixelShader* pPixelShader = nullptr;
-	ID3D11InputLayout* pVertexLayout = nullptr;
-	ID3D11Buffer* pConstantBuffer = nullptr;
+	ID3D11VertexShader *pVertexShader = nullptr;
+	ID3D11PixelShader *pPixelShader = nullptr;
+	ID3D11InputLayout *pVertexLayout = nullptr;
+	ID3D11Buffer *pConstantBuffer = nullptr;
 };
 
-inline HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob** ppBlobOut)
+inline HRESULT CompileShaderFromFile(const WCHAR *szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob **ppBlobOut)
 {
 	HRESULT hr = S_OK;
 
 	DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifdef _DEBUG
 	// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-	// Setting this flag improves the shader debugging experience, but still allows 
-	// the shaders to be optimized and to run exactly the way they will run in 
+	// Setting this flag improves the shader debugging experience, but still allows
+	// the shaders to be optimized and to run exactly the way they will run in
 	// the release configuration of this program.
 	dwShaderFlags |= D3DCOMPILE_DEBUG;
 
@@ -30,36 +30,37 @@ inline HRESULT CompileShaderFromFile(const WCHAR* szFileName, LPCSTR szEntryPoin
 	dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
-	ID3DBlob* pErrorBlob = nullptr;
+	ID3DBlob *pErrorBlob = nullptr;
 	hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
-		dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
+							dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
 	if (FAILED(hr))
 	{
 		if (pErrorBlob)
 		{
-			OutputDebugStringA(reinterpret_cast<const char*>(pErrorBlob->GetBufferPointer()));
+			OutputDebugStringA(reinterpret_cast<const char *>(pErrorBlob->GetBufferPointer()));
 			pErrorBlob->Release();
 		}
 		return hr;
 	}
-	if (pErrorBlob) pErrorBlob->Release();
+	if (pErrorBlob)
+		pErrorBlob->Release();
 
 	return S_OK;
 }
 
-inline Shaders CreateShaders(Context& context)
+inline Shaders CreateShaders(Context &context)
 {
 	Shaders shaders;
 
 	// Compile the vertex shader
-	ID3DBlob* pVSBlob = nullptr;
+	ID3DBlob *pVSBlob = nullptr;
 	auto hr = CompileShaderFromFile(L"Shaders/Lecture3/Lecture03.fx", "VS", "vs_4_0", &pVSBlob);
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
-			L"The FX file cannot be compiled. Please run this executable "
-			L"from the directory that contains the FX file.",
-			L"Error", MB_OK);
+				   L"The FX file cannot be compiled. Please run this executable "
+				   L"from the directory that contains the FX file.",
+				   L"Error", MB_OK);
 	}
 
 	// Create the vertex shader
@@ -73,10 +74,10 @@ inline Shaders CreateShaders(Context& context)
 
 	// Define the input layout
 	D3D11_INPUT_ELEMENT_DESC layout[] =
-	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-	};
+		{
+			{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+			{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+		};
 	UINT numElements = ARRAYSIZE(layout);
 
 	// Create the input layout
@@ -92,14 +93,14 @@ inline Shaders CreateShaders(Context& context)
 	context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
 
 	// Compile the pixel shader
-	ID3DBlob* pPSBlob = nullptr;
+	ID3DBlob *pPSBlob = nullptr;
 	hr = CompileShaderFromFile(L"Shaders/Lecture3/Lecture03.fx", "PS", "ps_4_0", &pPSBlob);
 	if (FAILED(hr))
 	{
 		MessageBox(nullptr,
-			L"The FX file cannot be compiled. Please run this executable "
-			L"from the directory that contains the FX file.",
-			L"Error", MB_OK);
+				   L"The FX file cannot be compiled. Please run this executable "
+				   L"from the directory that contains the FX file.",
+				   L"Error", MB_OK);
 	}
 
 	// Create the pixel shader
@@ -123,7 +124,7 @@ inline Shaders CreateShaders(Context& context)
 	return shaders;
 }
 
-void CleanupShaders(Shaders const& shaders)
+void CleanupShaders(Shaders const &shaders)
 {
 	if (shaders.pVertexShader != nullptr)
 	{

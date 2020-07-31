@@ -20,7 +20,7 @@ struct InputEvents
 
 inline InputEvents CreateDefaultInputEvents()
 {
-	return InputEvents{ {}, {0, 0}, false };
+	return InputEvents{{}, {0, 0}, false};
 }
 
 inline void UpdateInput(InputEvents &events)
@@ -61,7 +61,7 @@ inline void UpdateInput(InputEvents &events)
 	}
 }
 
-inline bool IsKeyDown(InputEvents const& input_events, SDL_Scancode scancode)
+inline bool IsKeyDown(InputEvents const &input_events, SDL_Scancode scancode)
 {
 	return input_events.keys[scancode] == eKeyState::Press || input_events.keys[scancode] == eKeyState::Repeate;
 }

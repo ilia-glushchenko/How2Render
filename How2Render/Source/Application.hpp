@@ -12,7 +12,7 @@ struct Application
 	Shaders shaders;
 };
 
-inline Application CreateApplication(Window& window)
+inline Application CreateApplication(Window &window)
 {
 	Application app;
 

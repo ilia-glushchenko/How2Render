@@ -12,8 +12,8 @@ struct Window
 
 inline Window CreateNewWindow(uint32_t width, uint32_t height)
 {
-	Window window{ nullptr, nullptr };
-	
+	Window window{nullptr, nullptr};
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0)
 	{
 		fprintf(stderr, "Could not initialize sdl2: %s\n", SDL_GetError());
@@ -44,7 +44,7 @@ inline void DestroyWindow(Window window)
 	SDL_Quit();
 }
 
-inline DirectX::XMINT2 GetWindowSize(Window const& window)
+inline DirectX::XMINT2 GetWindowSize(Window const &window)
 {
 	DirectX::XMINT2 result;
 	SDL_GetWindowSize(window.window, &result.x, &result.y);

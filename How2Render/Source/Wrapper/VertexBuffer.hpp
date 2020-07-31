@@ -12,14 +12,14 @@ struct Vertex
 
 struct VertexBuffer
 {
-	ID3D11Buffer* pVertexBuffer;
+	ID3D11Buffer *pVertexBuffer;
 	uint32_t vertexCount;
 };
 
-inline VertexBuffer CreateVertexBuffer(Context const& context)
+inline VertexBuffer CreateVertexBuffer(Context const &context)
 {
-	VertexBuffer buffer = { nullptr , 3 };
-	
+	VertexBuffer buffer = {nullptr, 3};
+
 	static const Vertex vertices[3] = {
 		Vertex{
 			DirectX::XMFLOAT3{-1.0, 3.0, 0.5},
@@ -59,7 +59,7 @@ inline VertexBuffer CreateVertexBuffer(Context const& context)
 	return buffer;
 }
 
-void CleanupBuffer(VertexBuffer const& buffer)
+void CleanupBuffer(VertexBuffer const &buffer)
 {
 	if (buffer.pVertexBuffer != nullptr)
 	{

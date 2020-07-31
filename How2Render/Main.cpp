@@ -16,7 +16,7 @@ struct RenderTargets
 	Texture second;
 };
 
-RenderTargets CreateRenderTargets(Context const& context, Window const& window)
+RenderTargets CreateRenderTargets(Context const &context, Window const &window)
 {
 	auto [aTextureResult, aTexture] = CreateTexture(context, window);
 	assert(aTextureResult);
@@ -27,20 +27,26 @@ RenderTargets CreateRenderTargets(Context const& context, Window const& window)
 	return {aTexture, bTexture};
 }
 
-void Render(
-	VertexBuffer const& buffer,
-	HostConstantBuffer const& constantBuffer, 
-	Application const& app,
-	RenderTargets const& targets, 
-	Camera const& camera, 
-	bool clearRenderTarget
-)
+void ReleaseRenderTargets(RenderTargets &rt)
 {
-	Texture const& currentFrameTarget = constantBuffer.frameCount % 2 == 1 ? targets.first : targets.second;
-	Texture const& prevFrameTarget = constantBuffer.frameCount % 2 == 0 ? targets.first : targets.second;
+	ReleaseTexture(rt.first);
+	ReleaseTexture(rt.second);
+}
+
+void Render(
+	VertexBuffer const &buffer,
+	HostConstantBuffer const &constantBuffer,
+	Application const &app,
+	RenderTargets const &targets,
+	Camera const &camera,
+	bool clearRenderTarget)
+{
+	Texture const &currentFrameTarget = constantBuffer.frameCount % 2 == 1 ? targets.first : targets.second;
+	Texture const &prevFrameTarget = constantBuffer.frameCount % 2 == 0 ? targets.first : targets.second;
 
 	// Clear the back buffer
-	if (clearRenderTarget) {
+	if (clearRenderTarget)
+	{
 		app.context.pImmediateContext->ClearRenderTargetView(
 			prevFrameTarget.renderTargetView, DirectX::Colors::Black);
 	}
@@ -57,14 +63,14 @@ void Render(
 	app.context.pImmediateContext->VSSetShader(app.shaders.pVertexShader, nullptr, 0);
 	app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
 	app.context.pImmediateContext->PSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
-	
+
 	app.context.pImmediateContext->PSSetSamplers(0, 1, &prevFrameTarget.pSamplerLinear);
 	app.context.pImmediateContext->PSSetShaderResources(0, 1, &prevFrameTarget.shaderResourceView);
-	
+
 	app.context.pImmediateContext->Draw(3, 0);
-	ID3D11ShaderResourceView* const pSRV[1] = { nullptr };
+	ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
 	app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
-	
+
 	// Present the information rendered to the back buffer to the front buffer (the screen)
 	app.context.pImmediateContext->CopyResource(app.swapchain.pBackBuffer, currentFrameTarget.texture);
 	app.swapchain.pSwapChain->Present(0, 0);
@@ -78,7 +84,7 @@ int main(int argc, char *args[])
 	Application application = CreateApplication(window);
 	VertexBuffer vertexBuffer = CreateVertexBuffer(application.context);
 	RenderTargets renderTargets = CreateRenderTargets(application.context, window);
-	
+
 	HostConstantBuffer constBuffer;
 	constBuffer.frameCount = 1;
 	constBuffer.screenWidth = 640;
@@ -92,17 +98,20 @@ int main(int argc, char *args[])
 		constBuffer.view = XMMatrixTranspose(camera.view);
 
 		Render(
-			vertexBuffer, 
-			constBuffer, 
-			application, 
-			renderTargets, 
-			camera, 
-			clearRenderTarget
-		);
+			vertexBuffer,
+			constBuffer,
+			application,
+			renderTargets,
+			camera,
+			clearRenderTarget);
 
 		constBuffer.frameCount++;
 	}
 
+	ReleaseRenderTargets(renderTargets);
+	CleanupBuffer(vertexBuffer);
+	CleanupApplication(application);
 	DestroyWindow(window);
+
 	return 0;
 }

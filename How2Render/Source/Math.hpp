@@ -19,4 +19,3 @@ namespace math
 			* DirectX::XMMatrixRotationX(-pitch);
 	}
 }
-
