@@ -37,7 +37,7 @@ PS_INPUT VS(VS_INPUT input)
     output.Pos = mul(WorldViewProj, pos);
     output.Normal = input.Normal;
     output.Tex.x = input.Tex.x;
-    output.Tex.y = 1. - input.Tex.y;
+    output.Tex.y = input.Tex.y;
     return output;
 }
 

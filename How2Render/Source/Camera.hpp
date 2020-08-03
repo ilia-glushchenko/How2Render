@@ -4,12 +4,18 @@
 
 struct Camera
 {
-	XMMATRIX view;
 	XMMATRIX model;
+	XMMATRIX view;
+	XMMATRIX proj;
+	XMMATRIX viewProj;
 
 	XMVECTOR position;
 	XMVECTOR forward;
 	XMVECTOR up;
+
+	float fov;
+	float zNear;
+	float zFar;
 
 	float yaw;
 	float pitch;
@@ -21,12 +27,18 @@ struct Camera
 inline Camera CreateDefaultCamera()
 {
 	return Camera{
-		XMMatrixIdentity(), //view
 		XMMatrixIdentity(), //model
+		XMMatrixIdentity(), //view
+		XMMatrixIdentity(), //proj
+		XMMatrixIdentity(), //viewProj
 
 		XMVECTOR{0, 0, -40, 1},	//position
 		XMVECTOR{0, 0, -1}, //forward
 		XMVECTOR{0, 1, 0},	//up
+
+		XMConvertToRadians(45.f), //fov
+		1.f, //zNear
+		100.f, //zFar
 
 		0, //yaw
 		0, //pitch
@@ -100,6 +112,8 @@ inline bool UpdateCamera(Camera &camera, InputEvents const &events, Window const
 
 	camera.position = XMVectorAdd(XMVectorAdd(camera.position, forward), right);
 	camera.view = math::CreateViewMatrix(camera.position, camera.yaw, camera.pitch);
+	camera.proj = XMMatrixPerspectiveFovLH(camera.fov, 1.f, camera.zNear, camera.zFar);
+	camera.viewProj = camera.view * camera.proj;
 
 	return isCameraChanged;
 }

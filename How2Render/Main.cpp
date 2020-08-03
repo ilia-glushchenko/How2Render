@@ -6,7 +6,7 @@
 #include "Input.hpp"
 #include "Application.hpp"
 #include "Math.hpp"
-#include "BitmapImage.hpp"
+#include "Image.hpp"
 #include "MipmapGenerator.hpp"
 #include "SphereMesh.hpp"
 
@@ -17,25 +17,29 @@ struct RenderObject
 	Mesh mesh;
 	Texture texture;
 	ID3D11SamplerState *sampler;
+	XMMATRIX world;
 };
 
 RenderObject CreateRenderObject(Context const& context)
 {
-	auto[loadResult, image] = LoadBitmapImage("Images/earth.bmp");
+	auto[loadResult, image] = LoadImageFromFile("Images/earth.bmp");
 	assert(loadResult);
 
-    GenerateMipmap(image);
+	GenerateMipmap(image);
 
 	auto[textureResult, texture] = CreateTexture(context, image);
 	assert(textureResult);
 
 	CleanupImage(image);
 
-	auto [sphereResult, mesh] = GenerateSphere(context, 10.f, 64, 64);
-	assert(sphereResult);
+	RenderObject object;
 
-	auto sampler = CreateSampler(context, eFilterType::Trilinear);
-	return {mesh, texture, sampler};
+	object.mesh = GenerateSphere(context, 10.f, 64);
+	object.texture = texture;
+	object.sampler = CreateSampler(context, eFilterType::Trilinear);
+	object.world = XMMatrixRotationY(XMConvertToRadians(20.f)); // Look at Europe
+
+	return object;
 }
 
 void CleanupRenderObject(RenderObject& renderObject)
@@ -54,15 +58,11 @@ void Render(
 	HostConstantBuffer const& constantBuffer,
 	Application const& app,
 	Camera const& camera,
-	RenderObject const& renderObject,
-	bool clearRenderTarget
+	RenderObject const& renderObject
 )
 {
-	if (clearRenderTarget)
-	{
-		app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView,
-			DirectX::Colors::AliceBlue);
-	}
+	app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView,
+		DirectX::Colors::AliceBlue);
 
 	// Update variables
 	app.context.pImmediateContext->UpdateSubresource(
@@ -75,7 +75,7 @@ void Render(
 	app.context.pImmediateContext->PSSetSamplers(0, 1, &renderObject.sampler);
 	app.context.pImmediateContext->PSSetShaderResources(0, 1, &renderObject.texture.shaderResourceView);
 
-	constexpr uint32_t stride = sizeof(Vertex);
+	constexpr uint32_t stride = sizeof(DirectX::GeometricPrimitive::VertexType);
 	constexpr uint32_t offset = 0;
 	const Mesh& sphere = renderObject.mesh;
 
@@ -100,23 +100,19 @@ int main(int argc, char *args[])
 	Application application = CreateApplication(window);
 	RenderObject renderObject = CreateRenderObject(application.context);
 
-	XMMATRIX world = XMMatrixRotationY(XMConvertToRadians(-230.f)); // Look at Europe
-	constexpr float fov = XMConvertToRadians(45.f);
-	XMMATRIX proj = XMMatrixPerspectiveFovLH(fov, 1.f, 0.1f, 100.f);
 	HostConstantBuffer constBuffer;
 
 	while (!inputEvents.quit)
 	{
 		UpdateInput(inputEvents);
 		UpdateCamera(camera, inputEvents, window);
-        constBuffer.worldViewProj = world * camera.view * proj;
+		constBuffer.worldViewProj = renderObject.world * camera.viewProj;
 
 		Render(
 			constBuffer,
 			application,
 			camera,
-			renderObject,
-			true
+			renderObject
 		);
 	}
 
