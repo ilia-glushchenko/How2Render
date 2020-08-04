@@ -70,9 +70,6 @@
     <ClInclude Include="Source\Wrapper\Sampler.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\SinCosTable.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

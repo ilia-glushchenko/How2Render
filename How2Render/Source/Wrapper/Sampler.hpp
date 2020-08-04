@@ -41,3 +41,11 @@ ID3D11SamplerState *CreateSampler(Context const& context, eFilterType filterType
 
 	return samplerState;
 }
+
+void ReleaseSampler(ID3D11SamplerState *sampler)
+{
+	if (sampler)
+	{
+		sampler->Release();
+	}
+}

@@ -46,12 +46,7 @@ void CleanupRenderObject(RenderObject& renderObject)
 {
 	CleanupMesh(renderObject.mesh);
 	ReleaseTexture(renderObject.texture);
-
-	if (renderObject.sampler)
-	{
-		renderObject.sampler->Release();
-		renderObject.sampler = nullptr;
-	}
+	ReleaseSampler(renderObject.sampler);
 }
 
 void Render(
@@ -77,7 +72,7 @@ void Render(
 
 	constexpr uint32_t stride = sizeof(DirectX::GeometricPrimitive::VertexType);
 	constexpr uint32_t offset = 0;
-	const Mesh& sphere = renderObject.mesh;
+	Mesh const& sphere = renderObject.mesh;
 
 	// Render sphere
 	app.context.pImmediateContext->IASetVertexBuffers(0, 1, &sphere.vertexBuffer, &stride, &offset);

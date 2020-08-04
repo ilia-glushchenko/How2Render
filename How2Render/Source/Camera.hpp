@@ -38,7 +38,7 @@ inline Camera CreateDefaultCamera()
 
 		XMConvertToRadians(45.f), //fov
 		1.f, //zNear
-		100.f, //zFar
+		1000.f, //zFar
 
 		0, //yaw
 		0, //pitch
