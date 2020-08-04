@@ -8,14 +8,14 @@ inline RGBQUAD *GetTexel(MipLevel& mipLevel, uint32_t col, uint32_t row)
 	return (RGBQUAD *)(mipLevel.data + offset);
 }
 
-inline const RGBQUAD *GetTexel(const MipLevel& mipLevel, uint32_t col, uint32_t row)
+inline const RGBQUAD *GetTexel(MipLevel const& mipLevel, uint32_t col, uint32_t row)
 {
 	const uint32_t index = row * mipLevel.width + col;
 	const size_t offset = index * sizeof(RGBQUAD);
 	return (const RGBQUAD *)(mipLevel.data + offset);
 }
 
-void BoxDownsample(MipLevel& nextMip, const MipLevel& currMip)
+void BoxDownsample(MipLevel& nextMip, MipLevel const& currMip)
 {
 	for (uint32_t j = 0; j < currMip.height; j += 2)
 	{
@@ -35,7 +35,7 @@ void BoxDownsample(MipLevel& nextMip, const MipLevel& currMip)
 	}
 }
 
-std::vector<MipLevel> CalculateMipChain(const Image& image)
+std::vector<MipLevel> CalculateMipChain(Image const& image)
 {
 	MipLevel mipLevel;
 
@@ -75,7 +75,7 @@ bool GenerateMipmap(Image& image)
 	auto mipChain = CalculateMipChain(image);
 
 	uint32_t mipMappedImageSize = 0;
-	for (const auto& mip : mipChain)
+	for (auto const& mip : mipChain)
 		mipMappedImageSize += mip.byteSize;
 
 	uint8_t *mipPixels = new uint8_t[mipMappedImageSize];
