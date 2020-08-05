@@ -19,16 +19,16 @@ Mesh GenerateSphere(Context const& context, float radius, uint32_t tesselation)
 
 	DirectX::GeometricPrimitive::CreateSphere(vertices, indices, radius * 2.f, tesselation, false);
 
-    Mesh sphere;
+	Mesh sphere;
 
-    sphere.vertexBuffer = CreateVertexBuffer(context, vertices);
-    sphere.indexBuffer = CreateIndexBuffer(context, indices);
+	sphere.vertexBuffer = CreateVertexBuffer(context, vertices);
+	sphere.indexBuffer = CreateIndexBuffer(context, indices);
 
 	return sphere;
 }
 
 void CleanupMesh(Mesh& mesh)
 {
-    ReleaseVertexBuffer(mesh.vertexBuffer);
-    ReleaseIndexBuffer(mesh.indexBuffer);
+	ReleaseVertexBuffer(mesh.vertexBuffer);
+	ReleaseIndexBuffer(mesh.indexBuffer);
 }
