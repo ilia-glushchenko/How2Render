@@ -109,6 +109,7 @@
     <ClInclude Include="Source\Input.hpp" />
     <ClInclude Include="Source\SphereMesh.hpp" />
     <ClInclude Include="Source\Window.hpp" />
+    <ClInclude Include="Source\Wrapper\IndexBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\Context.hpp" />
     <ClInclude Include="Source\Wrapper\Sampler.hpp" />

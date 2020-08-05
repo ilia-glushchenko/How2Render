@@ -75,10 +75,10 @@ void Render(
 	Mesh const& sphere = renderObject.mesh;
 
 	// Render sphere
-	app.context.pImmediateContext->IASetVertexBuffers(0, 1, &sphere.vertexBuffer, &stride, &offset);
-	app.context.pImmediateContext->IASetIndexBuffer(sphere.indexBuffer, sphere.indexFormat, 0);
+	app.context.pImmediateContext->IASetVertexBuffers(0, 1, &sphere.vertexBuffer.pVertexBuffer, &stride, &offset);
+	app.context.pImmediateContext->IASetIndexBuffer(sphere.indexBuffer.pIndexBuffer, sphere.indexBuffer.indexFormat, 0);
 	app.context.pImmediateContext->IASetPrimitiveTopology(sphere.topology);
-	app.context.pImmediateContext->DrawIndexed(sphere.numIndices, 0, 0);
+	app.context.pImmediateContext->DrawIndexed(sphere.indexBuffer.indexCount, 0, 0);
 
 	ID3D11ShaderResourceView* const pSRV[1] = {nullptr};
 	app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);

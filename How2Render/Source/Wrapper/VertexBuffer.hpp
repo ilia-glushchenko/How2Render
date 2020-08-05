@@ -16,53 +16,35 @@ struct VertexBuffer
 	uint32_t vertexCount;
 };
 
-inline VertexBuffer CreateVertexBuffer(Context const &context)
+template<typename VertexType>
+VertexBuffer CreateVertexBuffer(Context const& context, std::vector<VertexType> const& vertices)
 {
-	VertexBuffer buffer = {nullptr, 3};
+    D3D11_BUFFER_DESC bufferDesc;
 
-	static const Vertex vertices[3] = {
-		Vertex{
-			DirectX::XMFLOAT3{-1.0, 3.0, 0.5},
-			DirectX::XMFLOAT2{0.0, -1.0},
-		},
-		Vertex{
-			DirectX::XMFLOAT3{3.0, -1.0, 0.5},
-			DirectX::XMFLOAT2{2.0, 1.0},
-		},
-		Vertex{
-			DirectX::XMFLOAT3{-1.0, -1.0, 0.5},
-			DirectX::XMFLOAT2{0.0, 1.0},
-		},
-	};
+	bufferDesc.ByteWidth = (UINT)(sizeof(VertexType) * vertices.size());
+	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+    bufferDesc.CPUAccessFlags = 0;
+    bufferDesc.MiscFlags = 0;
+    bufferDesc.StructureByteStride = 0;
 
-	D3D11_BUFFER_DESC bd = {};
-	bd.ByteWidth = sizeof(Vertex) * 3;
-	bd.Usage = D3D11_USAGE_DEFAULT;
-	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	bd.CPUAccessFlags = 0;
-	bd.MiscFlags = 0;
-	bd.StructureByteStride = 0;
+	D3D11_SUBRESOURCE_DATA data = {vertices.data(), 0, 0};
+    VertexBuffer buffer;
 
-	D3D11_SUBRESOURCE_DATA InitData = {};
-	InitData.pSysMem = vertices;
-	auto hr = context.pd3dDevice->CreateBuffer(&bd, &InitData, &buffer.pVertexBuffer);
+    auto hr = context.pd3dDevice->CreateBuffer(&bufferDesc, &data, &buffer.pVertexBuffer);
 	assert(SUCCEEDED(hr));
+    buffer.vertexCount = (uint32_t)vertices.size();
 
-	// Set vertex buffer
-	uint32_t stride = sizeof(Vertex);
-	uint32_t offset = 0;
-	context.pImmediateContext->IASetVertexBuffers(0, 1, &buffer.pVertexBuffer, &stride, &offset);
-
-	// Set primitive topology
-	context.pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-	return buffer;
+    return buffer;
 }
 
-void CleanupBuffer(VertexBuffer const &buffer)
+void ReleaseVertexBuffer(VertexBuffer& buffer)
 {
 	if (buffer.pVertexBuffer != nullptr)
 	{
 		buffer.pVertexBuffer->Release();
+        buffer.pVertexBuffer = nullptr;
 	}
-};
+
+    buffer.vertexCount = 0;
+}

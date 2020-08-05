@@ -73,6 +73,9 @@
     <ClInclude Include="Source\Image.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Lecture4\Lecture04_PS.hlsl">
