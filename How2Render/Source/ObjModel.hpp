@@ -1,5 +1,5 @@
 #pragma once
-#include "../../TinyObj/tiny_obj_loader.h"
+#include "ThirdParty/tinyobjloader/tiny_obj_loader.h"
 #include "Wrapper/VertexBuffer.hpp"
 #include "Math.hpp"
 #include "ObjMaterial.hpp"

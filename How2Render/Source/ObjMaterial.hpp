@@ -1,5 +1,5 @@
 #pragma once
-#include "../../TinyObj/tiny_obj_loader.h"
+#include "ThirdParty/tinyobjloader/tiny_obj_loader.h"
 #include "TextureCache.hpp"
 #include "Helpers/TextureLoader.hpp"
 #include "Helpers/MipmapGenerator.hpp"
