@@ -29,8 +29,8 @@ namespace h2r
 
 	struct DeviceTexture
 	{
-		ID3D11Texture2D *texture;
-		ID3D11ShaderResourceView *shaderResourceView;
+		ID3D11Texture2D *texture = nullptr;
+		ID3D11ShaderResourceView *shaderResourceView = nullptr;
 	};
 
 	inline void ReleaseTexture(DeviceTexture& texture)

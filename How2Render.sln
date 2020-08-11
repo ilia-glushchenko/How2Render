@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30128.74
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "How2Render", "How2Render\How2Render.vcxproj", "{DD8D89DD-E057-4E78-B90E-7FE695224A45}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0A36AAF7-715A-4178-9373-83F360CD2CFB} = {0A36AAF7-715A-4178-9373-83F360CD2CFB}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tinyobj", "TinyObj\tinyobj.vcxproj", "{0A36AAF7-715A-4178-9373-83F360CD2CFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +20,10 @@ Global
 		{DD8D89DD-E057-4E78-B90E-7FE695224A45}.Debug|x64.Build.0 = Debug|x64
 		{DD8D89DD-E057-4E78-B90E-7FE695224A45}.Release|x64.ActiveCfg = Release|x64
 		{DD8D89DD-E057-4E78-B90E-7FE695224A45}.Release|x64.Build.0 = Release|x64
+		{0A36AAF7-715A-4178-9373-83F360CD2CFB}.Debug|x64.ActiveCfg = Debug|x64
+		{0A36AAF7-715A-4178-9373-83F360CD2CFB}.Debug|x64.Build.0 = Debug|x64
+		{0A36AAF7-715A-4178-9373-83F360CD2CFB}.Release|x64.ActiveCfg = Release|x64
+		{0A36AAF7-715A-4178-9373-83F360CD2CFB}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

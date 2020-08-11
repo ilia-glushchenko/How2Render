@@ -1,7 +1,10 @@
+#pragma once
 #include "Wrapper/Texture.hpp"
 
+#ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "ThirdParty/stb_image.h"
+#endif
 
 #include <string>
 #include <cstdint>
@@ -10,11 +13,13 @@
 namespace h2r
 {
 
-	inline std::tuple<bool, HostTexture> LoadHostTextureFromFile(const std::string& path)
+	inline std::tuple<bool, HostTexture> LoadHostTextureFromFile(const std::string& path,
+		bool flipVertically)
 	{
 		HostTexture hostTexture;
 
 		int width, height, comp;
+		stbi_set_flip_vertically_on_load(flipVertically);
 		auto *pixels = stbi_load(path.c_str(), &width, &height, &comp, STBI_rgb_alpha);
 		if (!pixels)
 		{

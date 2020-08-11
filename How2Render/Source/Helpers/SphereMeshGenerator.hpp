@@ -31,7 +31,7 @@ namespace h2r
 
 	inline RenderObject GenerateSphereRenderObject(Context const& context)
 	{
-		auto [loadResult, hostTexture] = LoadHostTextureFromFile("Data/Textures/earth.bmp");
+		auto [loadResult, hostTexture] = LoadHostTextureFromFile("Data/Textures/earth.bmp", false);
 		assert(loadResult);
 		GenerateMipmap(hostTexture);
 
