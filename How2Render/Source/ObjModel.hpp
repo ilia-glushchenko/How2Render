@@ -12,9 +12,9 @@ namespace h2r
 	{
 		XMFLOAT2 v;
 		if (index < 0)
-        {
+		{
 			v.x = v.y = 0.f;
-        }
+		}
 		else
 		{
 			v.x = attribs[index * 2];
@@ -27,9 +27,9 @@ namespace h2r
 	{
 		XMFLOAT3 v;
 		if (index < 0)
-        {
+		{
 			v.x = v.y = v.z = 0.f;
-        }
+		}
 		else
 		{
 			v.x = attribs[index * 3];
@@ -39,9 +39,9 @@ namespace h2r
 		return v;
 	}
 
-    DeviceMesh LoadObjMesh(Context const& context, tinyobj::shape_t const& shape, tinyobj::attrib_t const& attrib)
-    {
-        HostMesh mesh;
+	DeviceMesh LoadObjMesh(Context const& context, tinyobj::shape_t const& shape, tinyobj::attrib_t const& attrib)
+	{
+		HostMesh mesh;
 
 		const uint32_t numFaces = (uint32_t)(shape.mesh.indices.size() / 3);
 		for (uint32_t faceIndex = 0; faceIndex < numFaces; ++faceIndex)
@@ -101,9 +101,9 @@ namespace h2r
 		}
 
 		return CreateDeviceMesh(context, mesh, shape.mesh.material_ids[0]);
-    }
+	}
 
-    DeviceMaterial LoadObjMaterial(tinyobj::material_t const& mat, TextureLoader& loader)
+	DeviceMaterial LoadObjMaterial(tinyobj::material_t const& mat, TextureLoader& loader)
 	{
 		DeviceMaterial material;
 
@@ -159,11 +159,11 @@ namespace h2r
 
 		for (auto const& shape : shapes)
 		{
-            DeviceMesh mesh = LoadObjMesh(loader.context, shape, attrib);
+			DeviceMesh mesh = LoadObjMesh(loader.context, shape, attrib);
 			model.meshes.push_back(mesh);
 		}
 
-        loader.baseDir = baseDir;
+		loader.baseDir = baseDir;
 		for (auto const& mat : materials)
 		{
 			DeviceMaterial material = LoadObjMaterial(mat, loader);

@@ -14,9 +14,9 @@ namespace h2r
 		XMFLOAT3 position;
 		XMFLOAT3 normal;
 		XMFLOAT2 textureCoordinate;
-        Vertex() = default;
-        Vertex(XMFLOAT3 const& p, XMFLOAT3 const& n, XMFLOAT2 const& uv):
-            position(p), normal(n), textureCoordinate(uv) {}
+		Vertex() = default;
+		Vertex(XMFLOAT3 const& p, XMFLOAT3 const& n, XMFLOAT2 const& uv):
+			position(p), normal(n), textureCoordinate(uv) {}
 	};
 
 	struct HostMesh
@@ -29,19 +29,19 @@ namespace h2r
 	{
 		VertexBuffer vertexBuffer;
 		IndexBuffer indexBuffer;
-        int materialId = InvalidMaterialId;
+		int materialId = InvalidMaterialId;
 		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	};
 
 	inline DeviceMesh CreateDeviceMesh(Context const& context, HostMesh const& hostMesh,
-        int materialId = InvalidMaterialId)
+		int materialId = InvalidMaterialId)
 	{
 		DeviceMesh mesh;
 
 		mesh.vertexBuffer = CreateVertexBuffer(context, hostMesh.vertices);
-        if (!hostMesh.indices.empty())
-		    mesh.indexBuffer = CreateIndexBuffer(context, hostMesh.indices);
-        mesh.materialId = materialId;
+		if (!hostMesh.indices.empty())
+			mesh.indexBuffer = CreateIndexBuffer(context, hostMesh.indices);
+		mesh.materialId = materialId;
 
 		return mesh;
 	}

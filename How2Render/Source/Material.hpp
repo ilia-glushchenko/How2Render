@@ -5,11 +5,11 @@
 
 namespace h2r
 {
-    constexpr int InvalidMaterialId = -1;
+	constexpr int InvalidMaterialId = -1;
 
 	struct DeviceMaterial
 	{
-        DeviceTexture ambientTexture;
+		DeviceTexture ambientTexture;
 		DeviceTexture albedoTexture;
 		DeviceTexture specularTexture;
 		XMFLOAT3 ambient;

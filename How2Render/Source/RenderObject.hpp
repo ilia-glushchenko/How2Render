@@ -9,25 +9,25 @@ namespace h2r
 	struct RenderObject
 	{
 		DeviceModel model;
-        XMMATRIX world;
+		XMMATRIX world;
 	};
 
-    std::tuple<bool, RenderObject> CreateRenderObject(std::string const& fileName, TextureLoader& loader, float scale)
-    {
-        auto [result, objModel] = LoadObjModel(fileName, loader);
+	std::tuple<bool, RenderObject> CreateRenderObject(std::string const& fileName, TextureLoader& loader, float scale)
+	{
+		auto [result, objModel] = LoadObjModel(fileName, loader);
 		if (!result)
-            return {false, RenderObject{}};
+			return {false, RenderObject{}};
 
-        RenderObject renderObject;
-        renderObject.model = objModel;
-        renderObject.world = XMMatrixScaling(scale, scale, scale);
+		RenderObject renderObject;
+		renderObject.model = objModel;
+		renderObject.world = XMMatrixScaling(scale, scale, scale);
 
-        return {true, renderObject};
-    }
+		return {true, renderObject};
+	}
 
-    void FreeRenderObject(RenderObject& renderObject)
-    {
-        FreeModel(renderObject.model);
-    }
+	void FreeRenderObject(RenderObject& renderObject)
+	{
+		FreeModel(renderObject.model);
+	}
 
 }

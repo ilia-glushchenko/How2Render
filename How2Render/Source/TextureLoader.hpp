@@ -12,29 +12,29 @@
 
 namespace h2r
 {
-    struct TextureLoader
-    {
-        Context context;
-        std::string baseDir = ".";
-        bool flipVertically = true;
-        bool generateMipmap = true;
-        std::map<std::string, DeviceTexture> textureCache;
-    };
+	struct TextureLoader
+	{
+		Context context;
+		std::string baseDir = ".";
+		bool flipVertically = true;
+		bool generateMipmap = true;
+		std::map<std::string, DeviceTexture> textureCache;
+	};
 
-    TextureLoader CreateTextureLoader(Context const& context, bool flipVertically, bool generateMipmap,
-        const std::string& baseDir = ".")
-    {
-        TextureLoader loader;
+	TextureLoader CreateTextureLoader(Context const& context, bool flipVertically, bool generateMipmap,
+		const std::string& baseDir = ".")
+	{
+		TextureLoader loader;
 
-        loader.context = context;
-        loader.flipVertically = flipVertically;
-        loader.generateMipmap = generateMipmap;
-        loader.baseDir = baseDir;
+		loader.context = context;
+		loader.flipVertically = flipVertically;
+		loader.generateMipmap = generateMipmap;
+		loader.baseDir = baseDir;
 
-        return loader;
-    }
+		return loader;
+	}
 
-    void FreeTextureLoader(TextureLoader& loader)
+	void FreeTextureLoader(TextureLoader& loader)
 	{
 		for (auto& tex : loader.textureCache)
 			ReleaseTexture(tex.second);
@@ -42,7 +42,7 @@ namespace h2r
 		loader.textureCache.clear();
 	}
 
-    std::tuple<bool, DeviceTexture> FindCachedTexture(TextureLoader const& loader, std::string const& name)
+	std::tuple<bool, DeviceTexture> FindCachedTexture(TextureLoader const& loader, std::string const& name)
 	{
 		auto it = loader.textureCache.find(name);
 		if (it != loader.textureCache.end())
@@ -51,7 +51,7 @@ namespace h2r
 		return {false, DeviceTexture{}};
 	}
 
-    std::tuple<bool, HostTexture> LoadHostTextureFromFile(TextureLoader const& loader, const std::string& path)
+	std::tuple<bool, HostTexture> LoadHostTextureFromFile(TextureLoader const& loader, const std::string& path)
 	{
 		HostTexture hostTexture;
 		int width, height, comp;
@@ -80,7 +80,7 @@ namespace h2r
 		return {true, hostTexture};
 	}
 
-    void CleanupHostTexture(HostTexture& hostTexture)
+	void CleanupHostTexture(HostTexture& hostTexture)
 	{
 		if (hostTexture.pixels != nullptr)
 		{
@@ -92,7 +92,7 @@ namespace h2r
 		hostTexture.mipChain.clear();
 	}
 
-    std::tuple<bool, DeviceTexture> LoadDeviceTextureFromFile(TextureLoader& loader, std::string const& fileName)
+	std::tuple<bool, DeviceTexture> LoadDeviceTextureFromFile(TextureLoader& loader, std::string const& fileName)
 	{
 		if (fileName.empty())
 			return {false, DeviceTexture{}};
@@ -108,8 +108,8 @@ namespace h2r
 		if (!loadResult)
 			return {false, DeviceTexture{}};
 
-        if (loader.generateMipmap)
-		    GenerateMipmap(hostTexture);
+		if (loader.generateMipmap)
+			GenerateMipmap(hostTexture);
 
 		auto [textureResult, deviceTexture] = CreateTexture(loader.context, hostTexture);
 		if (!textureResult)

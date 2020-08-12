@@ -40,9 +40,9 @@ namespace h2r
 		Camera camera = CreateDefaultCamera();
 		InputEvents inputEvents = CreateDefaultInputEvents();
 		Application application = CreateApplication(window);
-        TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
-        auto [result, renderObject] = CreateRenderObject("Models\\sponza\\sponza.obj", textureLoader, 0.1f);
-        assert(result);
+		TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
+		auto [result, renderObject] = CreateRenderObject("Models\\sponza\\sponza.obj", textureLoader, 0.1f);
+		assert(result);
 		HostConstantBuffer constBuffer;
 
 		while (!inputEvents.quit)
@@ -62,7 +62,7 @@ namespace h2r
 		}
 
 		FreeRenderObject(renderObject);
-        FreeTextureLoader(textureLoader);
+		FreeTextureLoader(textureLoader);
 		CleanupApplication(application);
 		DestroyWindow(window);
 	}
