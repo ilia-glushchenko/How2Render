@@ -25,7 +25,7 @@ namespace h2r
 		if (fileName.empty())
 			return {false, DeviceTexture{}};
 
-		const std::string filePath = baseDir + "\\" + fileName;
+		std::string const filePath = baseDir + "\\" + fileName;
 		auto [found, deviceTexture] = FindCachedTexture(cache, filePath);
 		if (found)
 			return {true, deviceTexture};

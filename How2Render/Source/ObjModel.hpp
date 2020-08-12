@@ -8,6 +8,8 @@ namespace h2r
 {
 	struct ObjModel
 	{
+        static constexpr int InvalidMaterialId = -1;
+
 		struct Vertex
 		{
 			XMFLOAT3 position;
@@ -34,7 +36,9 @@ namespace h2r
 	{
 		XMFLOAT2 v;
 		if (index < 0)
+        {
 			v.x = v.y = 0.f;
+        }
 		else
 		{
 			v.x = attribs[index * 2];
@@ -47,7 +51,9 @@ namespace h2r
 	{
 		XMFLOAT3 v;
 		if (index < 0)
+        {
 			v.x = v.y = v.z = 0.f;
+        }
 		else
 		{
 			v.x = attribs[index * 3];
@@ -56,6 +62,75 @@ namespace h2r
 		}
 		return v;
 	}
+
+    ObjModel::Mesh LoadObjMesh(Context const& context, tinyobj::shape_t const& shape, tinyobj::attrib_t const& attrib)
+    {
+        std::vector<ObjModel::Vertex> vertices;
+
+		const uint32_t numFaces = (uint32_t)(shape.mesh.indices.size() / 3);
+		for (uint32_t faceIndex = 0; faceIndex < numFaces; ++faceIndex)
+		{
+			const uint32_t firstIndex = faceIndex * 3;
+			const tinyobj::index_t idx[3] = {
+				shape.mesh.indices[firstIndex],
+				shape.mesh.indices[firstIndex + 1],
+				shape.mesh.indices[firstIndex + 2]
+			};
+
+			XMFLOAT3 pos[3];
+			for (int i = 0; i < 3; ++i)
+				pos[i] = LoadVec3(attrib.vertices, idx[i].vertex_index);
+
+			XMFLOAT2 texCoord[3];
+			if (attrib.texcoords.empty())
+			{
+				for (int i = 0; i < 3; ++i)
+					texCoord[i] = XMFLOAT2(0.f, 0.f);
+			}
+			else
+			{
+				for (int i = 0; i < 3; ++i)
+					texCoord[i] = LoadVec2(attrib.texcoords, idx[i].texcoord_index);
+			}
+
+			bool invalidNormal = false;
+			XMFLOAT3 normal[3];
+
+			if (attrib.normals.empty())
+				invalidNormal = true;
+			else
+			{
+				if ((idx[0].normal_index < 0) ||
+					(idx[1].normal_index < 0) ||
+					(idx[2].normal_index < 0))
+				{
+					invalidNormal = true;
+				}
+				else
+				{
+					for (int i = 0; i < 3; ++i)
+						normal[i] = LoadVec3(attrib.normals, idx[i].normal_index);
+				}
+			}
+
+			if (invalidNormal)
+			{
+				XMVECTOR n = math::CalculateTriangleNormal(pos);
+				for (int i = 0; i < 3; ++i)
+					XMStoreFloat3(&normal[i], n);
+			}
+
+			for (int i = 0; i < 3; ++i)
+				vertices.emplace_back(pos[i], normal[i], texCoord[i]);
+		}
+
+		ObjModel::Mesh mesh;
+
+		mesh.vertexBuffer = CreateVertexBuffer(context, vertices);
+		mesh.materialId = shape.mesh.material_ids[0]; // Use first material ID
+
+        return mesh;
+    }
 
 	std::tuple<bool, ObjModel> LoadObjModel(Context const& context, std::string const& fileName)
 	{
@@ -83,69 +158,7 @@ namespace h2r
 
 		for (auto const& shape : shapes) // TODO: different draw calls for different shapes???
 		{
-			std::vector<ObjModel::Vertex> vertices;
-
-			const uint32_t numFaces = (uint32_t)(shape.mesh.indices.size() / 3);
-			for (uint32_t faceIndex = 0; faceIndex < numFaces; ++faceIndex)
-			{
-				const uint32_t firstIndex = faceIndex * 3;
-				const tinyobj::index_t idx[3] = {
-					shape.mesh.indices[firstIndex],
-					shape.mesh.indices[firstIndex + 1],
-					shape.mesh.indices[firstIndex + 2]
-				};
-
-				XMFLOAT3 pos[3];
-				for (int i = 0; i < 3; ++i)
-					pos[i] = LoadVec3(attrib.vertices, idx[i].vertex_index);
-
-				XMFLOAT2 texCoord[3];
-				if (attrib.texcoords.empty())
-				{
-					for (int i = 0; i < 3; ++i)
-						texCoord[i] = XMFLOAT2(0.f, 0.f);
-				}
-				else
-				{
-					for (int i = 0; i < 3; ++i)
-						texCoord[i] = LoadVec2(attrib.texcoords, idx[i].texcoord_index);
-				}
-
-				bool invalidNormal = false;
-				XMFLOAT3 normal[3];
-
-				if (attrib.normals.empty())
-					invalidNormal = true;
-				else
-				{
-					if ((idx[0].normal_index < 0) ||
-						(idx[1].normal_index < 0) ||
-						(idx[2].normal_index < 0))
-					{
-						invalidNormal = true;
-					}
-					else
-					{
-						for (int i = 0; i < 3; ++i)
-							normal[i] = LoadVec3(attrib.normals, idx[i].normal_index);
-					}
-				}
-
-				if (invalidNormal)
-				{
-					XMVECTOR n = math::CalcTriangleNormal(pos);
-					for (int i = 0; i < 3; ++i)
-						XMStoreFloat3(&normal[i], n);
-				}
-
-				for (int i = 0; i < 3; ++i)
-					vertices.emplace_back(pos[i], normal[i], texCoord[i]);
-			}
-
-			ObjModel::Mesh mesh;
-
-			mesh.vertexBuffer = CreateVertexBuffer(context, vertices);
-			mesh.materialId = shape.mesh.material_ids[0]; // Use first material ID
+            ObjModel::Mesh mesh = LoadObjMesh(context, shape, attrib);
 			model.meshes.push_back(mesh);
 		}
 
@@ -175,7 +188,7 @@ namespace h2r
 			ID3D11ShaderResourceView *shaderResourceViews[3];
 			MaterialConstants materialConstants;
 
-			if (mesh.materialId > -1)
+			if (mesh.materialId > ObjModel::InvalidMaterialId)
 			{
 				ObjMaterial const& material = model.materials[mesh.materialId];
 

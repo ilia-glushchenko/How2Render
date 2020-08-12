@@ -19,7 +19,7 @@ namespace h2r::math
 			* DirectX::XMMatrixRotationX(-pitch);
 	}
 
-	inline XMVECTOR CalcTriangleNormal(const XMFLOAT3 pos[3])
+	inline XMVECTOR CalculateTriangleNormal(XMFLOAT3 const pos[3])
 	{
 		XMVECTOR v0 = XMLoadFloat3(&pos[0]);
 		XMVECTOR v1 = XMLoadFloat3(&pos[1]);
