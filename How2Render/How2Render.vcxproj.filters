@@ -88,13 +88,13 @@
     <ClInclude Include="Source\Renderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\ObjMaterial.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\ObjModel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\TextureLoader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Model.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

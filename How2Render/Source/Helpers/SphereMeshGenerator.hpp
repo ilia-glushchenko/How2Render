@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Wrapper/Context.hpp"
-#include "../TextureLoader.hpp"
+#include "TextureLoader.hpp"
 #include "MipmapGenerator.hpp"
 #include "Mesh.hpp"
 #include "RenderObject.hpp"
@@ -40,9 +40,17 @@ namespace h2r
 		assert(textureResult);
 		CleanupHostTexture(hostTexture);
 
-		RenderObject object;
-		object.mesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 64));
-		object.material = CreateMaterial(context, deviceTexture, eTextureSamplerFilterType::Trilinear);
+        DeviceMaterial material;
+        material.albedoTexture = deviceTexture;
+        DeviceMesh sphereMesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 64), 0);
+
+        DeviceModel model;
+		model.meshes.push_back(sphereMesh);
+        model.materials.push_back(material);
+
+        RenderObject object;
+
+        object.model = model;
 		object.world = XMMatrixRotationY(XMConvertToRadians(20.f));
 
 		return object;

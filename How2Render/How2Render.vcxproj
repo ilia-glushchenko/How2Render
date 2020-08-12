@@ -111,7 +111,7 @@
     <ClInclude Include="Source\Math.hpp" />
     <ClInclude Include="Source\Input.hpp" />
     <ClInclude Include="Source\Mesh.hpp" />
-    <ClInclude Include="Source\ObjMaterial.hpp" />
+    <ClInclude Include="Source\Model.hpp" />
     <ClInclude Include="Source\ObjModel.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />

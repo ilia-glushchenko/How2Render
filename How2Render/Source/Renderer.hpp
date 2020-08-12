@@ -4,7 +4,7 @@
 #include "Helpers/SphereMeshGenerator.hpp"
 #include "Camera.hpp"
 #include "Application.hpp"
-#include "ObjModel.hpp"
+#include "RenderObject.hpp"
 #include "Input.hpp"
 #include <directxcolors.h>
 
@@ -14,7 +14,7 @@ namespace h2r
 		HostConstantBuffer const& constantBuffer,
 		Application const& app,
 		Camera const& camera,
-		ObjModel const& model
+		RenderObject const& renderObject
 	)
 	{
 		app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView, DirectX::Colors::White);
@@ -25,7 +25,7 @@ namespace h2r
 		app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
 
 		// Draw model with multiple meshes and materials
-		DrawObjModel(app.context, app.shaders, model);
+		DrawModel(app.context, app.shaders, renderObject.model);
 
 		ID3D11ShaderResourceView* const pSRV[1] = { nullptr };
 		app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
@@ -41,29 +41,27 @@ namespace h2r
 		InputEvents inputEvents = CreateDefaultInputEvents();
 		Application application = CreateApplication(window);
         TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
-		auto [result, objModel] = LoadObjModel("Models\\sponza\\sponza.obj", textureLoader);
-		assert(result);
-
-		const XMMATRIX world = XMMatrixScaling(0.1f, 0.1f, 0.1f);
+        auto [result, renderObject] = CreateRenderObject("Models\\sponza\\sponza.obj", textureLoader, 0.1f);
+        assert(result);
 		HostConstantBuffer constBuffer;
 
 		while (!inputEvents.quit)
 		{
 			UpdateInput(inputEvents);
 			UpdateCamera(camera, inputEvents, window);
-			constBuffer.world = world;
-			constBuffer.worldViewProj = world * camera.viewProj;
+			constBuffer.world = renderObject.world;
+			constBuffer.worldViewProj = renderObject.world * camera.viewProj;
 			constBuffer.cameraWorldPos = camera.position;
 
 			RenderFrame(
 				constBuffer,
 				application,
 				camera,
-				objModel
+				renderObject
 			);
 		}
 
-		FreeObjModel(objModel);
+		FreeRenderObject(renderObject);
         FreeTextureLoader(textureLoader);
 		CleanupApplication(application);
 		DestroyWindow(window);
