@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Wrapper/Context.hpp"
-#include "TextureLoader.hpp"
+#include "../TextureLoader.hpp"
 #include "MipmapGenerator.hpp"
 #include "Mesh.hpp"
 #include "RenderObject.hpp"
@@ -29,9 +29,10 @@ namespace h2r
 		return sphere;
 	}
 
-	inline RenderObject GenerateSphereRenderObject(Context const& context)
+	inline RenderObject GenerateSphereRenderObject(TextureLoader& loader)
 	{
-		auto [loadResult, hostTexture] = LoadHostTextureFromFile("Data/Textures/earth.bmp", false);
+        auto& context = loader.context;
+		auto [loadResult, hostTexture] = LoadHostTextureFromFile(loader, "Data/Textures/earth.bmp");
 		assert(loadResult);
 		GenerateMipmap(hostTexture);
 

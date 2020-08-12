@@ -1,10 +1,6 @@
 #pragma once
 #include "ThirdParty/tinyobjloader/tiny_obj_loader.h"
-#include "TextureCache.hpp"
-#include "Helpers/TextureLoader.hpp"
-#include "Helpers/MipmapGenerator.hpp"
-
-#include <cstdio>
+#include "TextureLoader.hpp"
 
 namespace h2r
 {
@@ -19,48 +15,19 @@ namespace h2r
 		float shininess;
 	};
 
-	std::tuple<bool, DeviceTexture> LoadTexture(Context const& context, std::string const& fileName,
-		std::string const& baseDir, TextureCache& cache)
-	{
-		if (fileName.empty())
-			return {false, DeviceTexture{}};
-
-		std::string const filePath = baseDir + "\\" + fileName;
-		auto [found, deviceTexture] = FindCachedTexture(cache, filePath);
-		if (found)
-			return {true, deviceTexture};
-
-		printf("Load texture %s\n", filePath.c_str());
-
-		auto [loadResult, hostTexture] = LoadHostTextureFromFile(filePath, true);
-		if (!loadResult)
-			return {false, DeviceTexture{}};
-
-		GenerateMipmap(hostTexture);
-
-		auto [textureResult, deviceTexture] = CreateTexture(context, hostTexture);
-		if (!textureResult)
-			return {false, DeviceTexture{}};
-
-		CleanupHostTexture(hostTexture);
-		CacheTexture(cache, filePath, deviceTexture);
-		return {true, deviceTexture};
-	}
-
-	ObjMaterial LoadObjMaterial(Context const& context, tinyobj::material_t const& mat,
-		std::string const& baseDir, TextureCache& cache)
+	ObjMaterial LoadObjMaterial(tinyobj::material_t const& mat, TextureLoader& loader)
 	{
 		ObjMaterial material;
 
-		auto [load, ambientTexture] = LoadTexture(context, mat.ambient_texname, baseDir, cache);
+		auto [load, ambientTexture] = LoadDeviceTextureFromFile(loader, mat.ambient_texname);
 		if (load)
 			material.ambientTexture = ambientTexture;
 
-		auto [load, albedoTexture] = LoadTexture(context, mat.diffuse_texname, baseDir, cache);
+		auto [load, albedoTexture] = LoadDeviceTextureFromFile(loader, mat.diffuse_texname);
 		if (load)
 			material.albedoTexture = albedoTexture;
 
-		auto [load, specularTexture] = LoadTexture(context, mat.specular_texname, baseDir, cache);
+		auto [load, specularTexture] = LoadDeviceTextureFromFile(loader, mat.specular_texname);
 		if (load)
 			material.specularTexture = specularTexture;
 

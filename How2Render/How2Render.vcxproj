@@ -105,7 +105,6 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.hpp" />
     <ClInclude Include="Source\Camera.hpp" />
-    <ClInclude Include="Source\Helpers\TextureLoader.hpp" />
     <ClInclude Include="Source\Helpers\MipmapGenerator.hpp" />
     <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp" />
     <ClInclude Include="Source\Material.hpp" />
@@ -116,7 +115,7 @@
     <ClInclude Include="Source\ObjModel.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />
-    <ClInclude Include="Source\TextureCache.hpp" />
+    <ClInclude Include="Source\TextureLoader.hpp" />
     <ClInclude Include="Source\Window.hpp" />
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />

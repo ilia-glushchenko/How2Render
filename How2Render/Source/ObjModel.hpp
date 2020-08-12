@@ -28,8 +28,6 @@ namespace h2r
 
 		std::vector<Mesh> meshes;
 		std::vector<ObjMaterial> materials;
-
-		TextureCache cache;
 	};
 
 	inline XMFLOAT2 LoadVec2(std::vector<tinyobj::real_t> const& attribs, int index)
@@ -132,7 +130,7 @@ namespace h2r
         return mesh;
     }
 
-	std::tuple<bool, ObjModel> LoadObjModel(Context const& context, std::string const& fileName)
+	std::tuple<bool, ObjModel> LoadObjModel(std::string const& fileName, TextureLoader& loader)
 	{
 		size_t slashPos = fileName.find_last_of("/");
 		if (std::string::npos == slashPos)
@@ -156,15 +154,16 @@ namespace h2r
 		if (!load)
 			return {false, model};
 
-		for (auto const& shape : shapes) // TODO: different draw calls for different shapes???
+		for (auto const& shape : shapes)
 		{
-            ObjModel::Mesh mesh = LoadObjMesh(context, shape, attrib);
+            ObjModel::Mesh mesh = LoadObjMesh(loader.context, shape, attrib);
 			model.meshes.push_back(mesh);
 		}
 
+        loader.baseDir = baseDir;
 		for (auto const& mat : materials)
 		{
-			ObjMaterial material = LoadObjMaterial(context, mat, baseDir, model.cache);
+			ObjMaterial material = LoadObjMaterial(mat, loader);
 			model.materials.push_back(material);
 		}
 
@@ -234,7 +233,5 @@ namespace h2r
 		}
 
 		model.meshes.clear();
-
-		FreeTextureCache(model.cache);
 	}
 } // namespace h2r

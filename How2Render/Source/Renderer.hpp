@@ -40,7 +40,8 @@ namespace h2r
 		Camera camera = CreateDefaultCamera();
 		InputEvents inputEvents = CreateDefaultInputEvents();
 		Application application = CreateApplication(window);
-		auto [result, objModel] = LoadObjModel(application.context, "Models\\sponza\\sponza.obj");
+        TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
+		auto [result, objModel] = LoadObjModel("Models\\sponza\\sponza.obj", textureLoader);
 		assert(result);
 
 		const XMMATRIX world = XMMatrixScaling(0.1f, 0.1f, 0.1f);
@@ -63,6 +64,7 @@ namespace h2r
 		}
 
 		FreeObjModel(objModel);
+        FreeTextureLoader(textureLoader);
 		CleanupApplication(application);
 		DestroyWindow(window);
 	}

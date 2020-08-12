@@ -67,9 +67,6 @@
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Wrapper\Texture.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
@@ -97,7 +94,7 @@
     <ClInclude Include="Source\ObjModel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\TextureCache.hpp">
+    <ClInclude Include="Source\TextureLoader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
