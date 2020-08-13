@@ -12,6 +12,7 @@ namespace h2r
 		DeviceTexture ambientTexture;
 		DeviceTexture albedoTexture;
 		DeviceTexture specularTexture;
+        DeviceTexture normalTexture;
 		XMFLOAT3 ambient;
 		XMFLOAT3 diffuse;
 		XMFLOAT3 specular;

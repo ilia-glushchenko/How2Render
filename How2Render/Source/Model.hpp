@@ -25,7 +25,7 @@ namespace h2r
 
 		for (auto const& mesh : model.meshes)
 		{
-			ID3D11ShaderResourceView *shaderResourceViews[3];
+			ID3D11ShaderResourceView *shaderResourceViews[4];
 			MaterialConstantBuffer materialConstants;
 
 			if (mesh.materialId > InvalidMaterialId)
@@ -35,6 +35,7 @@ namespace h2r
 				shaderResourceViews[0] = material.ambientTexture.shaderResourceView;
 				shaderResourceViews[1] = material.albedoTexture.shaderResourceView;
 				shaderResourceViews[2] = material.specularTexture.shaderResourceView;
+                shaderResourceViews[3] = material.normalTexture.shaderResourceView;
 
 				materialConstants.ambient = material.ambient;
 				materialConstants.diffuse = material.diffuse;

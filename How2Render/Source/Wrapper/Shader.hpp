@@ -68,7 +68,7 @@ namespace h2r
 
 		// Compile the vertex shader
 		ID3DBlob* pVSBlob = nullptr;
-		auto hr = CompileShaderFromFile(L"Shaders/Lecture5/Lecture05.fx", "VS", "vs_4_0", &pVSBlob);
+		auto hr = CompileShaderFromFile(L"Shaders/Lecture11/Lecture11.fx", "VS", "vs_4_0", &pVSBlob);
 		if (FAILED(hr))
 		{
 			MessageBox(nullptr,
@@ -109,7 +109,7 @@ namespace h2r
 
 		// Compile the pixel shader
 		ID3DBlob* pPSBlob = nullptr;
-		hr = CompileShaderFromFile(L"Shaders/Lecture5/Lecture05.fx", "PS", "ps_4_0", &pPSBlob);
+		hr = CompileShaderFromFile(L"Shaders/Lecture11/Lecture11.fx", "PS", "ps_4_0", &pPSBlob);
 		if (FAILED(hr))
 		{
 			MessageBox(nullptr,

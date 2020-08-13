@@ -119,6 +119,14 @@ namespace h2r
 		if (loadSpecular)
 			material.specularTexture = specularTexture;
 
+        // Some exporters export under different name
+        std::string normalMapName = mat.bump_texname;
+        if (normalMapName.empty())
+            normalMapName = mat.displacement_texname;
+        auto [loadNormal, normalTexture] = LoadDeviceTextureFromFile(loader, normalMapName);
+		if (loadNormal)
+			material.normalTexture = normalTexture;
+
 		material.ambient = XMFLOAT3(mat.ambient);
 		if ((material.ambient.x == 1.f) &&
 			(material.ambient.y == 1.f) &&
