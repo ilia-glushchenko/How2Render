@@ -35,7 +35,7 @@ namespace h2r
 				shaderResourceViews[0] = material.ambientTexture.shaderResourceView;
 				shaderResourceViews[1] = material.albedoTexture.shaderResourceView;
 				shaderResourceViews[2] = material.specularTexture.shaderResourceView;
-                shaderResourceViews[3] = material.normalTexture.shaderResourceView;
+				shaderResourceViews[3] = material.normalTexture.shaderResourceView;
 
 				materialConstants.ambient = material.ambient;
 				materialConstants.diffuse = material.diffuse;

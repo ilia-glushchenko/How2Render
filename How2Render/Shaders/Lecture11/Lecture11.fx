@@ -84,15 +84,15 @@ float4 PS(PS_INPUT input) : SV_Target
 	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb;
 	float3 albedo = txAlbedo.Sample(texSampler, input.Tex).rgb;
 	float3 specular = txSpecular.Sample(texSampler, input.Tex).rgb;
-    float3 micronormal = txNormal.Sample(texSampler, input.Tex).rgb;
+	float3 micronormal = txNormal.Sample(texSampler, input.Tex).rgb;
 
-    // Compute per-pixel cotangent frame
+	// Compute per-pixel cotangent frame
 	float3 normal = normalize(input.Normal);
 	float3x3 TBN = cotangentFrame(normal, input.WorldPos, input.Tex);
 
 	float3 v = normalize(CameraPos.xyz - input.WorldPos);
 	float3 l = normalize(SunDir);
-    // OpenGL vs DirectX normal format
+	// OpenGL vs DirectX normal format
 	micronormal.y = 1. - micronormal.y;
 	// Transform normal from texture space to object space
 	float3 n = mul(micronormal * 2. - 1., TBN);
