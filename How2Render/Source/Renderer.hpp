@@ -11,7 +11,7 @@
 namespace h2r
 {
 	void RenderFrame(
-		HostConstantBuffer const& constantBuffer,
+		TransformConstantBuffer const& transforms,
 		Application const& app,
 		Camera const& camera,
 		RenderObject const& renderObject
@@ -22,7 +22,7 @@ namespace h2r
 			D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
 
 		// Update variables
-		app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
+		app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &transforms, 0, 0);
 
 		// Draw model with multiple meshes and materials
 		DrawModel(app.context, app.shaders, renderObject.model);
@@ -43,18 +43,18 @@ namespace h2r
 		TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
 		auto [result, renderObject] = CreateRenderObject("Models\\sponza\\sponza.obj", textureLoader, 0.1f);
 		assert(result);
-		HostConstantBuffer constBuffer;
+		TransformConstantBuffer transforms;
 
 		while (!inputEvents.quit)
 		{
 			UpdateInput(inputEvents);
 			UpdateCamera(camera, inputEvents, window);
-			constBuffer.world = renderObject.world;
-			constBuffer.worldViewProj = renderObject.world * camera.viewProj;
-			constBuffer.cameraWorldPos = camera.position;
+			transforms.world = renderObject.world;
+			transforms.worldViewProj = renderObject.world * camera.viewProj;
+			transforms.cameraWorldPos = camera.position;
 
 			RenderFrame(
-				constBuffer,
+				transforms,
 				application,
 				camera,
 				renderObject

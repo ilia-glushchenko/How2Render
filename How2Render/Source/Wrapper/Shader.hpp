@@ -130,13 +130,13 @@ namespace h2r
 		// Create the constant buffer
 		D3D11_BUFFER_DESC bufferDescriptor ={};
 		bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-		bufferDescriptor.ByteWidth = sizeof(HostConstantBuffer);
+		bufferDescriptor.ByteWidth = sizeof(TransformConstantBuffer);
 		bufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		bufferDescriptor.CPUAccessFlags = 0;
 		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pConstantBuffer);
 		assert(SUCCEEDED(hr));
 
-		bufferDescriptor.ByteWidth = sizeof(MaterialConstants);
+		bufferDescriptor.ByteWidth = sizeof(MaterialConstantBuffer);
 		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pMaterialConstants);
 
 		shaders.pPointSampler = CreateSampler(context, eTextureSamplerFilterType::Point);

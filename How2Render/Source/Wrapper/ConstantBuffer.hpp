@@ -4,14 +4,14 @@
 
 namespace h2r
 {
-	struct HostConstantBuffer
+	struct TransformConstantBuffer
 	{
 		XMMATRIX world;
 		XMMATRIX worldViewProj;
 		XMVECTOR cameraWorldPos;
 	};
 
-	struct MaterialConstants
+	struct MaterialConstantBuffer
 	{
 		XMFLOAT3 ambient;
 		float padd0;

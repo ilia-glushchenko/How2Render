@@ -26,7 +26,7 @@ namespace h2r
 		for (auto const& mesh : model.meshes)
 		{
 			ID3D11ShaderResourceView *shaderResourceViews[3];
-			MaterialConstants materialConstants;
+			MaterialConstantBuffer materialConstants;
 
 			if (mesh.materialId > InvalidMaterialId)
 			{
