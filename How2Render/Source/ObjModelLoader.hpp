@@ -107,16 +107,16 @@ namespace h2r
 	{
 		DeviceMaterial material;
 
-		auto [load, ambientTexture] = LoadDeviceTextureFromFile(loader, mat.ambient_texname);
-		if (load)
+		auto [loadAmbient, ambientTexture] = LoadDeviceTextureFromFile(loader, mat.ambient_texname);
+		if (loadAmbient)
 			material.ambientTexture = ambientTexture;
 
-		auto [load, albedoTexture] = LoadDeviceTextureFromFile(loader, mat.diffuse_texname);
-		if (load)
+		auto [loadDiffuse, albedoTexture] = LoadDeviceTextureFromFile(loader, mat.diffuse_texname);
+		if (loadDiffuse)
 			material.albedoTexture = albedoTexture;
 
-		auto [load, specularTexture] = LoadDeviceTextureFromFile(loader, mat.specular_texname);
-		if (load)
+		auto [loadSpecular, specularTexture] = LoadDeviceTextureFromFile(loader, mat.specular_texname);
+		if (loadSpecular)
 			material.specularTexture = specularTexture;
 
 		material.ambient = XMFLOAT3(mat.ambient);
