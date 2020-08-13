@@ -98,9 +98,9 @@ namespace h2r
 			return {false, DeviceTexture{}};
 
 		std::string const filePath = loader.baseDir + "\\" + fileName;
-		auto [found, deviceTexture] = FindCachedTexture(loader, filePath);
+		auto [found, cachedTexture] = FindCachedTexture(loader, filePath);
 		if (found)
-			return {true, deviceTexture};
+			return {true, cachedTexture};
 
 		printf("Load texture %s\n", filePath.c_str());
 
