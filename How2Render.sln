@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "How2Render", "How2Render\Ho
 		{0A36AAF7-715A-4178-9373-83F360CD2CFB} = {0A36AAF7-715A-4178-9373-83F360CD2CFB}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tinyobj", "TinyObj\tinyobj.vcxproj", "{0A36AAF7-715A-4178-9373-83F360CD2CFB}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tinyobj", "How2Render\TinyObj\tinyobj.vcxproj", "{0A36AAF7-715A-4178-9373-83F360CD2CFB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

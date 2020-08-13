@@ -17,9 +17,9 @@ namespace h2r
 		ID3D11InputLayout *pVertexLayout = nullptr;
 		ID3D11Buffer *pConstantBuffer = nullptr;
 		ID3D11Buffer *pMaterialConstants = nullptr;
-		ID3D11SamplerState* pPointSampler;
-		ID3D11SamplerState* pBilinearSampler;
-		ID3D11SamplerState* pTrilinearSampler;
+		ID3D11SamplerState* pPointSampler = nullptr;
+		ID3D11SamplerState* pBilinearSampler = nullptr;
+		ID3D11SamplerState* pTrilinearSampler = nullptr;
 	};
 
 	inline HRESULT CompileShaderFromFile(

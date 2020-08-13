@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Math.hpp"
-#include "ObjModel.hpp"
+#include "ObjModelLoader.hpp"
 
 namespace h2r
 {
