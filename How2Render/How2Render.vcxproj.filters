@@ -21,6 +21,9 @@
     <Filter Include="Header Files\Helpers">
       <UniqueIdentifier>{7f5cc27c-cc09-4114-8b4d-e47a967ef928}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\ThirdParty">
+      <UniqueIdentifier>{da9bf7ac-b814-4bb3-99e0-6a2248e8f005}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -28,6 +31,12 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\tiny_obj_loader.cpp">
+      <Filter>Header Files\ThirdParty</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\stb_image.cpp">
+      <Filter>Header Files\ThirdParty</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -67,9 +76,6 @@
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Wrapper\Texture.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
@@ -90,6 +96,21 @@
     </ClInclude>
     <ClInclude Include="Source\Renderer.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Model.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ObjModelLoader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\stb_image.h">
+      <Filter>Header Files\ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\tiny_obj_loader.h">
+      <Filter>Header Files\ThirdParty</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
+      <Filter>Header Files\Helpers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

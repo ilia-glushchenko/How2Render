@@ -1,22 +1,35 @@
 #pragma once
 
-#include "Mesh.hpp"
-#include "Material.hpp"
+#include "Math.hpp"
+#include "ObjModelLoader.hpp"
 
 namespace h2r
 {
 
 	struct RenderObject
 	{
-		DeviceMesh mesh;
-		DeviceMaterial material;
+		DeviceModel model;
 		XMMATRIX world;
 	};
 
-	void CleanupRenderObject(RenderObject& renderObject)
+	std::tuple<bool, RenderObject> CreateRenderObject(std::string const &fileName, TextureLoader &loader, float scale)
 	{
-		CleanupDeviceMesh(renderObject.mesh);
-		ClenupMaterial(renderObject.material);
+		auto [result, objModel] = LoadObjModel(fileName, loader);
+		if (!result)
+		{
+			return {false, RenderObject{}};
+		}
+
+		RenderObject renderObject;
+		renderObject.model = objModel;
+		renderObject.world = XMMatrixScaling(scale, scale, scale);
+
+		return {true, renderObject};
 	}
 
-}
+	void FreeRenderObject(RenderObject &renderObject)
+	{
+		FreeModel(renderObject.model);
+	}
+
+} // namespace h2r

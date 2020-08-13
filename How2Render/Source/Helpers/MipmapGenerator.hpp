@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Wrapper/Texture.hpp"
 #include <cstdint>
 #include <vector>

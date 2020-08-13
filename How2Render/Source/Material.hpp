@@ -6,27 +6,17 @@
 namespace h2r
 {
 
+	constexpr int InvalidMaterialId = -1;
+
 	struct DeviceMaterial
 	{
-		DeviceTexture texture;
-		ID3D11SamplerState *sampler;
+		DeviceTexture ambientTexture;
+		DeviceTexture albedoTexture;
+		DeviceTexture specularTexture;
+		XMFLOAT3 ambient;
+		XMFLOAT3 diffuse;
+		XMFLOAT3 specular;
+		float shininess;
 	};
-
-	inline DeviceMaterial CreateMaterial(
-		Context const &context, DeviceTexture texture, eTextureSamplerFilterType filter)
-	{
-		DeviceMaterial material;
-
-		material.texture = texture;
-		material.sampler = CreateSampler(context, filter);
-
-		return material;
-	}
-
-	inline void ClenupMaterial(DeviceMaterial &material)
-	{
-		ReleaseTexture(material.texture);
-		ReleaseSampler(material.sampler);
-	}
 
 } // namespace h2r

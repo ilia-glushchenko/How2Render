@@ -69,6 +69,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\..\Debug</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -90,6 +91,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OutDir)\..\Release</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -99,19 +101,25 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\ThirdParty\stb_image.cpp" />
+    <ClCompile Include="Source\ThirdParty\tiny_obj_loader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.hpp" />
     <ClInclude Include="Source\Camera.hpp" />
-    <ClInclude Include="Source\Helpers\TextureLoader.hpp" />
     <ClInclude Include="Source\Helpers\MipmapGenerator.hpp" />
     <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp" />
+    <ClInclude Include="Source\Helpers\TextureLoader.hpp" />
     <ClInclude Include="Source\Material.hpp" />
     <ClInclude Include="Source\Math.hpp" />
     <ClInclude Include="Source\Input.hpp" />
     <ClInclude Include="Source\Mesh.hpp" />
+    <ClInclude Include="Source\Model.hpp" />
+    <ClInclude Include="Source\ObjModelLoader.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />
+    <ClInclude Include="Source\ThirdParty\stb_image.h" />
+    <ClInclude Include="Source\ThirdParty\tiny_obj_loader.h" />
     <ClInclude Include="Source\Window.hpp" />
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />

@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Wrapper/ConstantBuffer.hpp"
-#include "Wrapper/Context.hpp"
-
+#include "Wrapper/Sampler.hpp"
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
@@ -15,6 +14,10 @@ namespace h2r
 		ID3D11PixelShader *pPixelShader = nullptr;
 		ID3D11InputLayout *pVertexLayout = nullptr;
 		ID3D11Buffer *pConstantBuffer = nullptr;
+		ID3D11Buffer *pMaterialConstants = nullptr;
+		ID3D11SamplerState *pPointSampler = nullptr;
+		ID3D11SamplerState *pBilinearSampler = nullptr;
+		ID3D11SamplerState *pTrilinearSampler = nullptr;
 	};
 
 	inline HRESULT CompileShaderFromFile(
@@ -124,16 +127,23 @@ namespace h2r
 		// Create the constant buffer
 		D3D11_BUFFER_DESC bufferDescriptor = {};
 		bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-		bufferDescriptor.ByteWidth = sizeof(HostConstantBuffer);
+		bufferDescriptor.ByteWidth = sizeof(TransformConstantBuffer);
 		bufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		bufferDescriptor.CPUAccessFlags = 0;
 		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pConstantBuffer);
 		assert(SUCCEEDED(hr));
 
+		bufferDescriptor.ByteWidth = sizeof(MaterialConstantBuffer);
+		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pMaterialConstants);
+
+		shaders.pPointSampler = CreateSampler(context, eTextureSamplerFilterType::Point);
+		shaders.pBilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Bilinear);
+		shaders.pTrilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Trilinear);
+
 		return shaders;
 	}
 
-	inline void CleanupShaders(Shaders const &shaders)
+	inline void CleanupShaders(Shaders &shaders)
 	{
 		if (shaders.pVertexShader != nullptr)
 		{
@@ -147,9 +157,25 @@ namespace h2r
 		{
 			shaders.pConstantBuffer->Release();
 		}
+		if (shaders.pMaterialConstants != nullptr)
+		{
+			shaders.pMaterialConstants->Release();
+		}
 		if (shaders.pVertexLayout != nullptr)
 		{
 			shaders.pVertexLayout->Release();
+		}
+		if (shaders.pPointSampler != nullptr)
+		{
+			shaders.pPointSampler->Release();
+		}
+		if (shaders.pBilinearSampler != nullptr)
+		{
+			shaders.pBilinearSampler->Release();
+		}
+		if (shaders.pTrilinearSampler != nullptr)
+		{
+			shaders.pTrilinearSampler->Release();
 		}
 	};
 
