@@ -14,7 +14,9 @@ namespace h2r
 	{
 		IDXGISwapChain* pSwapChain = nullptr;
 		ID3D11Texture2D* pBackBuffer = nullptr;
+		ID3D11Texture2D* pDepthStencil = nullptr;
 		ID3D11RenderTargetView* pRenderTargetView = nullptr;
+		ID3D11DepthStencilView* pDepthStencilView = nullptr;
 	};
 
 	inline Swapchain CreateSwapchain(Window const& window, Context const& context)
@@ -76,7 +78,28 @@ namespace h2r
 			swapchain.pBackBuffer, nullptr, &swapchain.pRenderTargetView);
 		assert(SUCCEEDED(hr));
 
-		context.pImmediateContext->OMSetRenderTargets(1, &swapchain.pRenderTargetView, nullptr);
+		D3D11_TEXTURE2D_DESC depthDesc;
+
+		// Setup depth/stencil buffer
+		depthDesc.Width = sd.BufferDesc.Width;
+		depthDesc.Height = sd.BufferDesc.Height;
+		depthDesc.MipLevels = 1;
+		depthDesc.ArraySize = 1;
+		depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthDesc.SampleDesc.Count = sd.SampleDesc.Count;
+		depthDesc.SampleDesc.Quality = sd.SampleDesc.Quality;
+		depthDesc.Usage = D3D11_USAGE_DEFAULT;
+		depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		depthDesc.CPUAccessFlags = 0;
+		depthDesc.MiscFlags = 0;
+
+		hr = context.pd3dDevice->CreateTexture2D(&depthDesc, nullptr, &swapchain.pDepthStencil);
+		assert(SUCCEEDED(hr));
+
+		hr = context.pd3dDevice->CreateDepthStencilView(swapchain.pDepthStencil, nullptr, &swapchain.pDepthStencilView);
+		assert(SUCCEEDED(hr));
+
+		context.pImmediateContext->OMSetRenderTargets(1, &swapchain.pRenderTargetView, swapchain.pDepthStencilView);
 
 		// Setup the viewport
 		D3D11_VIEWPORT viewport;
@@ -91,19 +114,32 @@ namespace h2r
 		return swapchain;
 	}
 
-	inline void CleanupSwapchain(Swapchain const& swapchain)
+	inline void CleanupSwapchain(Swapchain& swapchain)
 	{
-		if (swapchain.pSwapChain != nullptr)
-		{
-			swapchain.pSwapChain->Release();
-		}
 		if (swapchain.pBackBuffer != nullptr)
 		{
 			swapchain.pBackBuffer->Release();
+			swapchain.pBackBuffer = nullptr;
+		}
+		if (swapchain.pDepthStencil != nullptr)
+		{
+			swapchain.pDepthStencil->Release();
+			swapchain.pDepthStencil = nullptr;
 		}
 		if (swapchain.pRenderTargetView != nullptr)
 		{
 			swapchain.pRenderTargetView->Release();
+			swapchain.pRenderTargetView = nullptr;
+		}
+		if (swapchain.pDepthStencilView != nullptr)
+		{
+			swapchain.pDepthStencilView->Release();
+			swapchain.pDepthStencilView = nullptr;
+		}
+		if (swapchain.pSwapChain != nullptr)
+		{
+			swapchain.pSwapChain->Release();
+			swapchain.pSwapChain = nullptr;
 		}
 	}
 

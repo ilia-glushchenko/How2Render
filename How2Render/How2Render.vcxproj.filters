@@ -15,11 +15,11 @@
     <Filter Include="Header Files\Wrapper">
       <UniqueIdentifier>{ba347936-f75a-4e6d-b356-561b26e120b2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Lecture4">
-      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Helpers">
       <UniqueIdentifier>{7f5cc27c-cc09-4114-8b4d-e47a967ef928}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Lecture5">
+      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -67,9 +67,6 @@
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Wrapper\Texture.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
@@ -91,16 +88,25 @@
     <ClInclude Include="Source\Renderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\TextureLoader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Model.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ObjModelLoader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Lecture4\Lecture04_PS.hlsl">
-      <Filter>Shaders\Lecture4</Filter>
+    <FxCompile Include="Shaders\Lecture5\Lecture05.fx">
+      <Filter>Shaders\Lecture5</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture4\Lecture04_VS.hlsl">
-      <Filter>Shaders\Lecture4</Filter>
+    <FxCompile Include="Shaders\Lecture5\Lecture05_PS.hlsl">
+      <Filter>Shaders\Lecture5</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture4\Lecture04.fx">
-      <Filter>Shaders\Lecture4</Filter>
+    <FxCompile Include="Shaders\Lecture5\Lecture05_VS.hlsl">
+      <Filter>Shaders\Lecture5</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

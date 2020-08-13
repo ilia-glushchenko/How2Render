@@ -17,6 +17,7 @@ namespace h2r
 		XMVECTOR up;
 
 		float fov;
+		float aspectRatio;
 		float zNear;
 		float zFar;
 
@@ -35,18 +36,19 @@ namespace h2r
 			XMMatrixIdentity(), //proj
 			XMMatrixIdentity(), //viewProj
 
-			XMVECTOR{ 0, 0, -40, 1 },	//position
-			XMVECTOR{ 0, 0, -1 }, 		//forward
-			XMVECTOR{ 0, 1, 0 },		//up
+			XMVECTOR{0, 50, 0, 1},	//position
+			XMVECTOR{0, 0, 1}, //forward
+			XMVECTOR{0, 1, 0},	//up
 
-			XMConvertToRadians(45.f), 	//fov
-			1.f, 	//zNear
+			XMConvertToRadians(90.f), //fov
+			1280.f / 720.f,
+			1.f, //zNear
 			1000.f, //zFar
 
-			0, //yaw
+			XMConvertToRadians(90.f), //yaw
 			0, //pitch
 
-			0.01f, //speed
+			0.05f, //speed
 			false  //capture mouse
 		};
 	}
@@ -62,7 +64,7 @@ namespace h2r
 			SDL_ShowCursor(!camera.isMouseCaptured);
 		}
 
-		XMVECTOR const worldForward ={ 0., 0., -1., 0. };
+		XMVECTOR const worldForward ={ 0., 0., 1., 0. };
 		XMVECTOR const worldRight ={ 1., 0., 0., 0. };
 
 		XMVECTOR forward ={};
@@ -115,7 +117,7 @@ namespace h2r
 
 		camera.position = XMVectorAdd(XMVectorAdd(camera.position, forward), right);
 		camera.view = math::CreateViewMatrix(camera.position, camera.yaw, camera.pitch);
-		camera.proj = XMMatrixPerspectiveFovLH(camera.fov, 1.f, camera.zNear, camera.zFar);
+		camera.proj = XMMatrixPerspectiveFovLH(camera.fov, camera.aspectRatio, camera.zNear, camera.zFar);
 		camera.viewProj = camera.view * camera.proj;
 
 		return isCameraChanged;

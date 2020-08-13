@@ -18,4 +18,13 @@ namespace h2r::math
 			* DirectX::XMMatrixRotationY(-yaw)
 			* DirectX::XMMatrixRotationX(-pitch);
 	}
+
+	inline XMVECTOR CalculateTriangleNormal(XMFLOAT3 const pos[3])
+	{
+		XMVECTOR v0 = XMLoadFloat3(&pos[0]);
+		XMVECTOR v1 = XMLoadFloat3(&pos[1]);
+		XMVECTOR v2 = XMLoadFloat3(&pos[2]);
+		XMVECTOR n = XMVector3Cross(XMVectorSubtract(v1, v0), XMVectorSubtract(v2, v0));
+		return XMVector3Normalize(n);
+	}
 }
