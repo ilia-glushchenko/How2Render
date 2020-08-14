@@ -97,9 +97,9 @@ float4 PS(PS_INPUT input) : SV_Target
 	float3 v = normalize(CameraPos.xyz - input.WorldPos);
 	float3 l = normalize(SunDir);
 
-    // In terms of normal maps, the difference result in how the green channel of a RGB texture should be interpreted.
+	// In terms of normal maps, the difference result in how the green channel of a RGB texture should be interpreted.
 	// OpenGL expects the first pixel to be at the bottom while DirectX expects it to be at the top
-    // https://docs.substance3d.com/bake/what-is-the-difference-between-the-opengl-and-directx-normal-format-182256965.html
+	// https://docs.substance3d.com/bake/what-is-the-difference-between-the-opengl-and-directx-normal-format-182256965.html
 	micronormal.y = 1. - micronormal.y;
 	// Transform normal from texture space to object space
 	float3 n = mul(micronormal * 2. - 1., TBN);
