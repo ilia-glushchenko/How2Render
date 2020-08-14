@@ -61,7 +61,8 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader
+// Christian Schuler, "Normal Mapping without Precomputed Tangents", ShaderX 5, Chapter 2.6.
+// http://www.thetenthplanet.de/archives/1180
 //--------------------------------------------------------------------------------------
 float3x3 cotangentFrame(float3 N, float3 p, float2 uv)
 {
@@ -79,6 +80,9 @@ float3x3 cotangentFrame(float3 N, float3 p, float2 uv)
 	return float3x3(T * invmax, B * invmax, N);
 }
 
+//--------------------------------------------------------------------------------------
+// Pixel Shader
+//--------------------------------------------------------------------------------------
 float4 PS(PS_INPUT input) : SV_Target
 {
 	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb;
@@ -92,7 +96,10 @@ float4 PS(PS_INPUT input) : SV_Target
 
 	float3 v = normalize(CameraPos.xyz - input.WorldPos);
 	float3 l = normalize(SunDir);
-	// OpenGL vs DirectX normal format
+
+    // In terms of normal maps, the difference result in how the green channel of a RGB texture should be interpreted.
+	// OpenGL expects the first pixel to be at the bottom while DirectX expects it to be at the top
+    // https://docs.substance3d.com/bake/what-is-the-difference-between-the-opengl-and-directx-normal-format-182256965.html
 	micronormal.y = 1. - micronormal.y;
 	// Transform normal from texture space to object space
 	float3 n = mul(micronormal * 2. - 1., TBN);

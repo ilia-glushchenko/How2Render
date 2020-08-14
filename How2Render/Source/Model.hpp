@@ -25,7 +25,7 @@ namespace h2r
 
 		for (auto const& mesh : model.meshes)
 		{
-			ID3D11ShaderResourceView *shaderResourceViews[4];
+			ID3D11ShaderResourceView *shaderResourceViews[MaxMaterialTextures];
 			MaterialConstantBuffer materialConstants;
 
 			if (mesh.materialId > InvalidMaterialId)
@@ -44,7 +44,7 @@ namespace h2r
 			}
 			else
 			{
-				for (int i = 0; i < _countof(shaderResourceViews); ++i)
+				for (int i = 0; i < MaxMaterialTextures; ++i)
 					shaderResourceViews[i] = nullptr;
 
 				materialConstants.ambient = XMFLOAT3(0.1f, 0.1f, 0.1f);
@@ -57,7 +57,7 @@ namespace h2r
 			context.pImmediateContext->UpdateSubresource(
 				shaders.pMaterialConstants, 0, nullptr, &materialConstants, 0, 0);
 			// Set material textures
-			context.pImmediateContext->PSSetShaderResources(0, _countof(shaderResourceViews), shaderResourceViews);
+			context.pImmediateContext->PSSetShaderResources(0, MaxMaterialTextures, shaderResourceViews);
 
 			constexpr uint32_t stride = sizeof(Vertex);
 			constexpr uint32_t offset = 0;

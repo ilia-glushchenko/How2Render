@@ -6,6 +6,7 @@
 namespace h2r
 {
 	constexpr int InvalidMaterialId = -1;
+    constexpr uint32_t MaxMaterialTextures = 4;
 
 	struct DeviceMaterial
 	{
