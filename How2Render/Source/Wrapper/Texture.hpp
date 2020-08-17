@@ -29,19 +29,23 @@ namespace h2r
 
 	struct DeviceTexture
 	{
-		ID3D11Texture2D *texture = nullptr;
-		ID3D11ShaderResourceView *shaderResourceView = nullptr;
+		uint32_t width = 0;
+		uint32_t height = 0;
+		ID3D11Texture2D *pTexture = nullptr;
+		ID3D11ShaderResourceView *pShaderResourceView = nullptr;
 	};
 
 	inline void ReleaseTexture(DeviceTexture& texture)
 	{
-		if (texture.texture != nullptr)
+		if (texture.pTexture != nullptr)
 		{
-			texture.texture->Release();
+			texture.pTexture->Release();
+			texture.pTexture = nullptr;
 		}
-		if (texture.shaderResourceView != nullptr)
+		if (texture.pShaderResourceView != nullptr)
 		{
-			texture.shaderResourceView->Release();
+			texture.pShaderResourceView->Release();
+			texture.pShaderResourceView = nullptr;
 		}
 	}
 
@@ -71,9 +75,9 @@ namespace h2r
 			textureData.push_back(subData);
 		}
 
-		DeviceTexture result{ nullptr, nullptr };
+		DeviceTexture result{ 0, 0, nullptr, nullptr };
 
-		auto hr = context.pd3dDevice->CreateTexture2D(&desc, textureData.data(), &result.texture);
+		auto hr = context.pd3dDevice->CreateTexture2D(&desc, textureData.data(), &result.pTexture);
 		if (FAILED(hr))
 		{
 			printf("Failed to create texture.");
@@ -86,12 +90,15 @@ namespace h2r
 		SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 		SRVDesc.Texture2D.MipLevels = desc.MipLevels;
 
-		if (FAILED(context.pd3dDevice->CreateShaderResourceView(result.texture, &SRVDesc, &result.shaderResourceView)))
+		if (FAILED(context.pd3dDevice->CreateShaderResourceView(result.pTexture, &SRVDesc, &result.pShaderResourceView)))
 		{
 			printf("Failed to create shader resource view");
 			ReleaseTexture(result);
 			return { false, result };
 		}
+
+		result.width = image.width;
+		result.height = image.height;
 
 		return { true, result };
 	}

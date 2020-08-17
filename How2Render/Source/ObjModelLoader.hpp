@@ -100,7 +100,25 @@ namespace h2r
 				mesh.vertices.emplace_back(pos[i], normal[i], texCoord[i]);
 		}
 
-		return CreateDeviceMesh(context, mesh, shape.mesh.material_ids[0]);
+		VertexRange range = {0, 3, shape.mesh.material_ids[0]};
+
+		for (uint32_t i = 1, n = (uint32_t)shape.mesh.material_ids.size();
+			i < n;
+			++i, range.vertexCount += 3)
+		{
+			if (shape.mesh.material_ids[i] != range.materialId)
+			{
+				mesh.vertexRanges.push_back(range);
+
+				// Begin new range
+				range.firstVertex = range.vertexCount;
+				range.vertexCount = 0;
+				range.materialId = shape.mesh.material_ids[i];
+			}
+		}
+
+		mesh.vertexRanges.push_back(range);
+		return CreateDeviceMesh(context, mesh);
 	}
 
 	DeviceMaterial LoadObjMaterial(tinyobj::material_t const& mat, TextureLoader& loader)
@@ -129,6 +147,9 @@ namespace h2r
 		material.diffuse = XMFLOAT3(mat.diffuse);
 		material.specular = XMFLOAT3(mat.specular);
 		material.shininess = mat.shininess;
+
+		if (material.albedoTexture.pTexture || (mat.dissolve == 0))
+			material.enableBlend = true;
 
 		return material;
 	}

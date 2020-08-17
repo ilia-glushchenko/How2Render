@@ -36,16 +36,16 @@ namespace h2r
 			XMMatrixIdentity(), //proj
 			XMMatrixIdentity(), //viewProj
 
-			XMVECTOR{0, 50, 0, 1},	//position
+			XMVECTOR{0, 30, 100, 1}, //position
 			XMVECTOR{0, 0, 1}, //forward
-			XMVECTOR{0, 1, 0},	//up
+			XMVECTOR{0, 1, 0}, //up
 
-			XMConvertToRadians(90.f), //fov
+			XMConvertToRadians(60.f), //fov
 			1280.f / 720.f,
 			1.f, //zNear
 			1000.f, //zFar
 
-			XMConvertToRadians(90.f), //yaw
+			XMConvertToRadians(180.f), //yaw
 			0, //pitch
 
 			0.05f, //speed

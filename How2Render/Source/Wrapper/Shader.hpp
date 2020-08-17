@@ -14,12 +14,15 @@ namespace h2r
 	{
 		ID3D11VertexShader *pVertexShader = nullptr;
 		ID3D11PixelShader *pPixelShader = nullptr;
+		ID3D11VertexShader *pDepthVertexShader = nullptr;
+		ID3D11PixelShader *pDepthPixelShader = nullptr;
 		ID3D11InputLayout *pVertexLayout = nullptr;
 		ID3D11Buffer *pConstantBuffer = nullptr;
 		ID3D11Buffer *pMaterialConstants = nullptr;
-		ID3D11SamplerState* pPointSampler = nullptr;
-		ID3D11SamplerState* pBilinearSampler = nullptr;
-		ID3D11SamplerState* pTrilinearSampler = nullptr;
+		ID3D11SamplerState *pPointSampler = nullptr;
+		ID3D11SamplerState *pBilinearSampler = nullptr;
+		ID3D11SamplerState *pTrilinearSampler = nullptr;
+		ID3D11SamplerState *pDepthComparisonSampler = nullptr;
 	};
 
 	inline HRESULT CompileShaderFromFile(
@@ -62,13 +65,12 @@ namespace h2r
 		return S_OK;
 	}
 
-	inline Shaders CreateShaders(Context &context)
+	inline void CreateVertexShaderFromFile(const WCHAR *szFileName, Context& context, ID3D11VertexShader **ppVertexShader,
+		ID3DBlob **ppBlob = nullptr)
 	{
-		Shaders shaders;
-
 		// Compile the vertex shader
 		ID3DBlob* pVSBlob = nullptr;
-		auto hr = CompileShaderFromFile(L"Shaders/Lecture5/Lecture05.fx", "VS", "vs_4_0", &pVSBlob);
+		auto hr = CompileShaderFromFile(szFileName, "VS", "vs_4_0", &pVSBlob);
 		if (FAILED(hr))
 		{
 			MessageBox(nullptr,
@@ -79,12 +81,50 @@ namespace h2r
 
 		// Create the vertex shader
 		hr = context.pd3dDevice->CreateVertexShader(
-			pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &shaders.pVertexShader);
+			pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, ppVertexShader);
 		if (FAILED(hr))
 		{
 			pVSBlob->Release();
+			if (ppBlob)
+				*ppBlob = nullptr;
 			printf("Failed to create vertex shader.");
 		}
+
+		if (ppBlob)
+			*ppBlob = pVSBlob;
+		else
+			pVSBlob->Release();
+	}
+
+	inline void CreatePixelShaderFromFile(const WCHAR *szFileName, Context& context, ID3D11PixelShader **ppPixelShader)
+	{
+		// Compile the pixel shader
+		ID3DBlob* pPSBlob = nullptr;
+		auto hr = CompileShaderFromFile(szFileName, "PS", "ps_4_0", &pPSBlob);
+		if (FAILED(hr))
+		{
+			MessageBox(nullptr,
+				L"The FX file cannot be compiled. Please run this executable "
+				L"from the directory that contains the FX file.",
+				L"Error", MB_OK);
+		}
+
+		// Create the pixel shader
+		hr = context.pd3dDevice->CreatePixelShader(
+			pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, ppPixelShader);
+		pPSBlob->Release();
+		if (FAILED(hr))
+		{
+			printf("Failed to create pixel shader.");
+		}
+	}
+
+	inline Shaders CreateShaders(Context &context)
+	{
+		Shaders shaders;
+
+		ID3DBlob* pVSBlob;
+		CreateVertexShaderFromFile(L"Shaders/Lecture12/Lecture12.fx", context, &shaders.pVertexShader, &pVSBlob);
 
 		// Define the input layout
 		D3D11_INPUT_ELEMENT_DESC layout[] =
@@ -96,7 +136,7 @@ namespace h2r
 		UINT numElements = ARRAYSIZE(layout);
 
 		// Create the input layout
-		hr = context.pd3dDevice->CreateInputLayout(
+		auto hr = context.pd3dDevice->CreateInputLayout(
 			layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &shaders.pVertexLayout);
 		pVSBlob->Release();
 		if (FAILED(hr))
@@ -107,25 +147,10 @@ namespace h2r
 		// Set the input layout
 		context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
 
-		// Compile the pixel shader
-		ID3DBlob* pPSBlob = nullptr;
-		hr = CompileShaderFromFile(L"Shaders/Lecture5/Lecture05.fx", "PS", "ps_4_0", &pPSBlob);
-		if (FAILED(hr))
-		{
-			MessageBox(nullptr,
-				L"The FX file cannot be compiled. Please run this executable "
-				L"from the directory that contains the FX file.",
-				L"Error", MB_OK);
-		}
+		CreatePixelShaderFromFile(L"Shaders/Lecture12/Lecture12.fx", context, &shaders.pPixelShader);
 
-		// Create the pixel shader
-		hr = context.pd3dDevice->CreatePixelShader(
-			pPSBlob->GetBufferPointer(),
-			pPSBlob->GetBufferSize(),
-			nullptr,
-			&shaders.pPixelShader);
-		pPSBlob->Release();
-		assert(SUCCEEDED(hr));
+		CreateVertexShaderFromFile(L"Shaders/Lecture12/Depth.fx", context, &shaders.pDepthVertexShader);
+		CreatePixelShaderFromFile(L"Shaders/Lecture12/Depth.fx", context, &shaders.pDepthPixelShader);
 
 		// Create the constant buffer
 		D3D11_BUFFER_DESC bufferDescriptor ={};
@@ -142,6 +167,7 @@ namespace h2r
 		shaders.pPointSampler = CreateSampler(context, eTextureSamplerFilterType::Point);
 		shaders.pBilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Bilinear);
 		shaders.pTrilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Trilinear);
+		shaders.pDepthComparisonSampler = CreateDepthComparisonSampler(context);
 
 		return shaders;
 	}
@@ -155,6 +181,14 @@ namespace h2r
 		if (shaders.pPixelShader != nullptr)
 		{
 			shaders.pPixelShader->Release();
+		}
+		if (shaders.pDepthVertexShader != nullptr)
+		{
+			shaders.pDepthVertexShader->Release();
+		}
+		if (shaders.pDepthPixelShader != nullptr)
+		{
+			shaders.pDepthPixelShader->Release();
 		}
 		if (shaders.pConstantBuffer != nullptr)
 		{

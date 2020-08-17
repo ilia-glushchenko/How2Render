@@ -32,17 +32,21 @@ namespace h2r
 	inline RenderObject GenerateSphereRenderObject(TextureLoader& loader)
 	{
 		auto& context = loader.context;
-		auto [loadResult, hostTexture] = LoadHostTextureFromFile(loader, "Data/Textures/earth.bmp");
+		auto [loadResult, hostTexture] = LoadHostTextureFromFile(loader, "Textures/stones.jpg");
 		assert(loadResult);
-		GenerateMipmap(hostTexture);
 
 		auto [textureResult, deviceTexture] = CreateTexture(context, hostTexture);
 		assert(textureResult);
 		CleanupHostTexture(hostTexture);
 
 		DeviceMaterial material;
+		material.ambientTexture = deviceTexture;
 		material.albedoTexture = deviceTexture;
-		DeviceMesh sphereMesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 64), 0);
+
+		constexpr float radius = 10.f;
+		constexpr int materialId = 0;
+
+		DeviceMesh sphereMesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, radius, 64), materialId);
 
 		DeviceModel model;
 		model.meshes.push_back(sphereMesh);
@@ -51,7 +55,9 @@ namespace h2r
 		RenderObject object;
 
 		object.model = model;
-		object.world = XMMatrixRotationY(XMConvertToRadians(20.f));
+		XMMATRIX rotation = XMMatrixRotationY(XMConvertToRadians(90.f));
+		XMMATRIX translation = XMMatrixTranslation(0.f, radius, 0.f);
+		object.world = XMMatrixMultiply(rotation, translation);
 
 		return object;
 	}

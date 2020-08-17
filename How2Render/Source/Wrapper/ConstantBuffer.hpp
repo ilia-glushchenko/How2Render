@@ -7,8 +7,11 @@ namespace h2r
 	struct TransformConstantBuffer
 	{
 		XMMATRIX world;
+		XMMATRIX worldView;
 		XMMATRIX worldViewProj;
-		XMVECTOR cameraWorldPos;
+		XMMATRIX normal;
+		XMMATRIX shadowProj;
+		XMVECTOR lightViewPos;
 	};
 
 	struct MaterialConstantBuffer

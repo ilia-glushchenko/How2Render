@@ -18,8 +18,8 @@
     <Filter Include="Header Files\Helpers">
       <UniqueIdentifier>{7f5cc27c-cc09-4114-8b4d-e47a967ef928}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shaders\Lecture5">
-      <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
+    <Filter Include="Shaders\Lecture12">
+      <UniqueIdentifier>{0eba3597-b68f-4700-b88c-c5550061bf2c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,9 +44,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\Shader.hpp">
-      <Filter>Header Files\Wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="Swapchain.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp">
@@ -97,16 +94,40 @@
     <ClInclude Include="Source\ObjModelLoader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Wrapper\BlendState.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\DepthRenderTarget.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Swapchain.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SpotLight.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\GroundMeshGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders\Lecture5\Lecture05.fx">
-      <Filter>Shaders\Lecture5</Filter>
+    <FxCompile Include="Shaders\Lecture12\Lecture12.fx">
+      <Filter>Shaders\Lecture12</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture5\Lecture05_PS.hlsl">
-      <Filter>Shaders\Lecture5</Filter>
+    <FxCompile Include="Shaders\Lecture12\Lecture12_PS.hlsl">
+      <Filter>Shaders\Lecture12</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\Lecture5\Lecture05_VS.hlsl">
-      <Filter>Shaders\Lecture5</Filter>
+    <FxCompile Include="Shaders\Lecture12\Lecture12_VS.hlsl">
+      <Filter>Shaders\Lecture12</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Lecture12\Depth_VS.hlsl">
+      <Filter>Shaders\Lecture12</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Lecture12\Depth_PS.hlsl">
+      <Filter>Shaders\Lecture12</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Lecture12\Depth.fx">
+      <Filter>Shaders\Lecture12</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>
