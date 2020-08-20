@@ -2,16 +2,16 @@
 
 #include "Input.hpp"
 #include "Window.hpp"
-#include <DirectXMath.h>
+#include "Math.hpp"
 
 struct Camera
 {
-	DirectX::XMMATRIX view;
-	DirectX::XMMATRIX model;
+	XMMATRIX view;
+	XMMATRIX model;
 
-	DirectX::XMVECTOR position;
-	DirectX::XMVECTOR forward;
-	DirectX::XMVECTOR up;
+	XMVECTOR position;
+	XMVECTOR forward;
+	XMVECTOR up;
 
 	float yaw;
 	float pitch;
@@ -23,8 +23,8 @@ struct Camera
 Camera CreateDefaultCamera()
 {
 	return Camera{
-		DirectX::XMMatrixIdentity(), //view
-		DirectX::XMMatrixIdentity(), //model
+		XMMatrixIdentity(), //view
+		XMMatrixIdentity(), //model
 
 		{0, 2, 3},	//position
 		{0, 0, -1}, //forward
@@ -38,16 +38,6 @@ Camera CreateDefaultCamera()
 	};
 }
 
-inline DirectX::XMMATRIX CreateCameraMatrix(DirectX::XMVECTOR pos, float yaw, float pitch)
-{
-	return DirectX::XMMatrixRotationX(pitch) * DirectX::XMMatrixRotationY(yaw) * DirectX::XMMatrixTranslation(pos.m128_f32[0], pos.m128_f32[1], pos.m128_f32[2]);
-}
-
-inline DirectX::XMMATRIX CreateViewMatrix(DirectX::XMVECTOR pos, float yaw, float pitch)
-{
-	return DirectX::XMMatrixTranslation(-pos.m128_f32[0], -pos.m128_f32[1], -pos.m128_f32[2]) * DirectX::XMMatrixRotationY(-yaw) * DirectX::XMMatrixRotationX(-pitch);
-}
-
 inline bool UpdateCamera(InputEvents &events, Camera &camera, Window const &window)
 {
 	bool isCameraChanged = false;
@@ -59,40 +49,36 @@ inline bool UpdateCamera(InputEvents &events, Camera &camera, Window const &wind
 		SDL_ShowCursor(!camera.isMouseCaptured);
 	}
 
-	DirectX::XMVECTOR const worldForward = {0.f, 0.f, -1.f, 0.f};
-	DirectX::XMVECTOR const worldRight = {1.f, 0.f, 0.f, 0.f};
+	XMVECTOR const worldForward = { 0., 0., -1., 0. };
+	XMVECTOR const worldRight = { 1., 0., 0., 0. };
 
-	DirectX::XMVECTOR forward = {};
-	DirectX::XMVECTOR right = {};
-	DirectX::XMMATRIX cameraMatrix = CreateCameraMatrix(camera.position, camera.yaw, camera.pitch);
+	XMVECTOR forward = {};
+	XMVECTOR right = {};
+	XMMATRIX const cameraMatrix = math::CreateCameraMatrix(camera.position, camera.yaw, camera.pitch);
 
 	if (IsKeyDown(events, SDL_SCANCODE_W))
 	{
-		forward = DirectX::XMVectorScale(DirectX::XMVector4Transform(worldForward, cameraMatrix), camera.speed);
+		forward = XMVectorScale(XMVector4Transform(worldForward, cameraMatrix), camera.speed);
 		isCameraChanged = true;
 	}
 	if (IsKeyDown(events, SDL_SCANCODE_S))
 	{
-		forward = DirectX::XMVectorScale(
-			DirectX::XMVector4Transform(DirectX::XMVectorNegate(worldForward), cameraMatrix),
-			camera.speed);
+		forward = XMVectorScale(XMVector4Transform(XMVectorNegate(worldForward), cameraMatrix), camera.speed);
 		isCameraChanged = true;
 	}
 	if (IsKeyDown(events, SDL_SCANCODE_A))
 	{
-		right = DirectX::XMVectorScale(
-			DirectX::XMVector4Transform(DirectX::XMVectorNegate(worldRight), cameraMatrix),
-			camera.speed);
+		right = XMVectorScale(XMVector4Transform(XMVectorNegate(worldRight), cameraMatrix), camera.speed);
 		isCameraChanged = true;
 	}
 	if (IsKeyDown(events, SDL_SCANCODE_D))
 	{
-		right = DirectX::XMVectorScale(DirectX::XMVector4Transform(worldRight, cameraMatrix), camera.speed);
+		right = XMVectorScale(XMVector4Transform(worldRight, cameraMatrix), camera.speed);
 		isCameraChanged = true;
 	}
 	if (IsKeyDown(events, SDL_SCANCODE_Q))
 	{
-		camera.position.m128_f32[1] -= camera.speed;
+		camera.position.m128_f32[1] += -camera.speed;
 		isCameraChanged = true;
 	}
 	if (IsKeyDown(events, SDL_SCANCODE_E))
@@ -101,23 +87,21 @@ inline bool UpdateCamera(InputEvents &events, Camera &camera, Window const &wind
 		isCameraChanged = true;
 	}
 
+	XMUINT2 const windowSize = GetWindowSize(window);
 	if (camera.isMouseCaptured)
 	{
-		DirectX::XMUINT2 const windowSize = GetWindowSize(window);
-		DirectX::XMUINT2 const windowCenter = {windowSize.x / 2, windowSize.y / 2};
-		DirectX::XMFLOAT2 const mouseDistance = {
-			static_cast<float>(windowCenter.x - events.mouse.x),
-			static_cast<float>(windowCenter.y - events.mouse.y)};
-		SDL_WarpMouseInWindow(window.window, windowCenter.x, windowCenter.y);
+		XMFLOAT2 const windowCenter = { windowSize.x / 2.f, windowSize.y / 2.f };
+		XMFLOAT2 const mouseDelta = { windowCenter.x - events.mouse.x, windowCenter.y - events.mouse.y };
+		SDL_WarpMouseInWindow(window.window, (int)windowCenter.x, (int)windowCenter.y);
 
-		camera.pitch += mouseDistance.y / windowSize.x;
-		camera.yaw += mouseDistance.x / windowSize.y;
+		camera.pitch += mouseDelta.y / windowSize.x;
+		camera.yaw += mouseDelta.x / windowSize.y;
 
-		isCameraChanged |= DirectX::XMVectorGetX(DirectX::XMVector2Length({mouseDistance.x, mouseDistance.y})) > 0;
+		isCameraChanged |= (XMVector2Length({ mouseDelta.x, mouseDelta.y }).m128_f32[0]) > 1e-3;
 	}
 
-	camera.position = DirectX::XMVectorAdd(DirectX::XMVectorAdd(camera.position, forward), right);
-	camera.view = CreateViewMatrix(camera.position, camera.yaw, camera.pitch);
+	camera.position = XMVectorAdd(XMVectorAdd(camera.position, forward), right);
+	camera.view = math::CreateViewMatrix(camera.position, camera.yaw, camera.pitch);
 
 	return isCameraChanged;
 }

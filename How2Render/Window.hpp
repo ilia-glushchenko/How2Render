@@ -1,8 +1,8 @@
 #pragma once
 
-#include <DirectXMath.h>
+#include "Math.hpp"
 #include <SDL.h>
-#include <stdio.h>
+#include <cstdio>
 
 struct Window
 {
@@ -17,7 +17,7 @@ Window CreateWindow(uint32_t width, uint32_t height)
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
+		fprintf(stderr, "Could not initialize sdl2: %s\n", SDL_GetError());
 		return {nullptr, nullptr};
 	}
 
@@ -29,7 +29,7 @@ Window CreateWindow(uint32_t width, uint32_t height)
 		SDL_WINDOW_SHOWN);
 	if (window.window == nullptr)
 	{
-		fprintf(stderr, "could not create window: %s\n", SDL_GetError());
+		fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
 		return {nullptr, nullptr};
 	}
 
@@ -40,9 +40,9 @@ Window CreateWindow(uint32_t width, uint32_t height)
 	return window;
 }
 
-DirectX::XMUINT2 GetWindowSize(Window const &window)
+XMUINT2 GetWindowSize(Window const &window)
 {
-	DirectX::XMINT2 screenSize = {};
+	XMINT2 screenSize = {};
 	SDL_GetWindowSize(window.window, &screenSize.x, &screenSize.y);
 	return {static_cast<uint32_t>(screenSize.x), static_cast<uint32_t>(screenSize.y)};
 }

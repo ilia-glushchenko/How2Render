@@ -151,9 +151,13 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="Intersection.hpp" />
     <ClInclude Include="Input.hpp" />
+    <ClInclude Include="Math.hpp" />
     <ClInclude Include="Primitives.hpp" />
+    <ClInclude Include="Random.hpp" />
+    <ClInclude Include="Renderer.hpp" />
     <ClInclude Include="Window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

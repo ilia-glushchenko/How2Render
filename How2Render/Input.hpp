@@ -1,6 +1,6 @@
 #pragma once
 
-#include <DirectXMath.h>
+#include "Math.hpp"
 #include <SDL.h>
 
 enum class eKeyState : uint8_t
@@ -14,13 +14,13 @@ enum class eKeyState : uint8_t
 struct InputEvents
 {
 	eKeyState keys[SDL_NUM_SCANCODES];
-	DirectX::XMINT2 mouse;
+	XMINT2 mouse;
 	bool quit;
 };
 
 InputEvents CreateDefaultInputEvents()
 {
-	return InputEvents{{}, {0, 0}, false};
+	return InputEvents{{}, {}, false};
 }
 
 void UpdateInput(InputEvents &events)
@@ -62,4 +62,9 @@ void UpdateInput(InputEvents &events)
 			}
 		}
 	}
+}
+
+bool IsKeyDown(InputEvents &inputEvents, SDL_Scancode scancode)
+{
+	return inputEvents.keys[scancode] == eKeyState::Press || inputEvents.keys[scancode] == eKeyState::Repeat;
 }
