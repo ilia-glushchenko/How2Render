@@ -1,7 +1,8 @@
 //--------------------------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------------------------
-static const float3 SunDir = float3(-1, 1, 1);
+#define USE_PCF
+#define PCF_SAMPLES 16
 
 //--------------------------------------------------------------------------------------
 // Texture Samplers
@@ -70,6 +71,43 @@ PS_INPUT VS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
+float pcf(float4 shadowPos, float radius, float bias)
+{
+	const float2 poisson[PCF_SAMPLES] =
+	{
+		float2(-0.376812, 0.649265),
+		float2(-0.076855, -0.632508),
+		float2(-0.833781, -0.268513),
+		float2(0.398413, 0.027787),
+		float2(0.360999, 0.766915),
+		float2(0.584715, -0.809986),
+		float2(-0.238882, 0.067867),
+		float2(0.824410, 0.543863),
+		float2(0.883033, -0.143517),
+		float2(-0.581550, -0.809760),
+		float2(-0.682282, 0.223546),
+		float2(0.438031, -0.405749),
+		float2(0.045340, 0.428813),
+		float2(-0.311559, -0.328006),
+		float2(-0.054146, 0.935302),
+		float2(0.723339, 0.196795)
+	};
+	uint width, height;
+	txShadowMap.GetDimensions(width, height);
+	float invSize = float2(1., 1.)/float2(width, height);
+	float invNormRadius = radius * invSize;
+	shadowPos.z -= bias;
+
+	float sum = 0.;
+	for (int i = 0; i < PCF_SAMPLES; ++i)
+	{
+		float2 offset = poisson[i] * invNormRadius;
+		sum += txShadowMap.SampleCmpLevelZero(depthSampler, shadowPos.xy + offset, shadowPos.z);
+	}
+
+	return sum/(float)PCF_SAMPLES;
+}
+
 float4 PS(PS_INPUT input) : SV_Target
 {
 	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb;
@@ -90,10 +128,15 @@ float4 PS(PS_INPUT input) : SV_Target
 	float3 Kspec = specular * Specular;
 
 	// Compare .z coordinate with depth stored in shadow map
-	float4 shadowPos = mul(ShadowProj, input.WorldPos);
-	shadowPos.z -= 0.05; // Bias
-	shadowPos /= shadowPos.w;
+	float4 clipPos = mul(ShadowProj, input.WorldPos);
+	const float bias = 0.00025;
+#ifdef USE_PCF
+	float shadow = pcf(clipPos/clipPos.w, 4.0, bias);
+#else
+	float3 shadowPos = clipPos.xyz/clipPos.w;
+	shadowPos.z -= bias;
 	float shadow = txShadowMap.SampleCmpLevelZero(depthSampler, shadowPos.xy, shadowPos.z);
+#endif
 
 	// Phong BRDF
 	float NdL = max(dot(n, l), 0.);
