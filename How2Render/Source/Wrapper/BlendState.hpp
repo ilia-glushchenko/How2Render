@@ -6,6 +6,8 @@
 namespace h2r
 {
 
+    constexpr uint8_t COLOR_WRITE_ENABLE_RGB = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE;
+
 	enum class eBlendStateType : uint8_t
 	{
 		Additive = 0,
@@ -21,7 +23,7 @@ namespace h2r
 	};
 
 	inline ID3D11BlendState *CreateBlendState(Context const& context, eBlendStateType blendType,
-		uint8_t renderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_RED | D3D11_COLOR_WRITE_ENABLE_GREEN | D3D11_COLOR_WRITE_ENABLE_BLUE)
+		uint8_t renderTargetWriteMask = COLOR_WRITE_ENABLE_RGB)
 	{
 		D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
 

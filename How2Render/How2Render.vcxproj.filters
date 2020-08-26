@@ -109,6 +109,9 @@
     <ClInclude Include="Source\Helpers\GroundMeshGenerator.hpp">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
+    <ClInclude Include="Source\ShadowMapPass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Lecture12\Lecture12.fx">

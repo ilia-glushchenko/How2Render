@@ -19,7 +19,7 @@ SamplerComparisonState depthSampler : register(s1);
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer ConstantBuffer : register(b0)
+cbuffer TransformConstants : register(b0)
 {
 	matrix World;
 	matrix WorldView;
@@ -94,14 +94,13 @@ float pcf(float4 shadowPos, float radius, float bias)
 	};
 	uint width, height;
 	txShadowMap.GetDimensions(width, height);
-	float invSize = float2(1., 1.)/float2(width, height);
-	float invNormRadius = radius * invSize;
+	float2 normalizedRadius = float2(radius, radius)/float2(width, height);
 	shadowPos.z -= bias;
 
 	float sum = 0.;
 	for (int i = 0; i < PCF_SAMPLES; ++i)
 	{
-		float2 offset = poisson[i] * invNormRadius;
+		float2 offset = poisson[i] * normalizedRadius;
 		sum += txShadowMap.SampleCmpLevelZero(depthSampler, shadowPos.xy + offset, shadowPos.z);
 	}
 

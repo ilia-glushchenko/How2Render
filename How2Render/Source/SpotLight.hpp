@@ -21,8 +21,8 @@ namespace h2r
 
 	void CalculateViewProjection(SpotLight& spotLight)
 	{
-		const XMVECTOR upDirection = XMVectorSet(0.f, 1.f, 0.f, 1.f);
-		const float fovRadians = XMConvertToRadians(spotLight.fov);
+		XMVECTOR const upDirection = XMVectorSet(0.f, 1.f, 0.f, 1.f);
+		float const fovRadians = XMConvertToRadians(spotLight.fov);
 
 		spotLight.view = XMMatrixLookAtLH(spotLight.position, spotLight.lookAtPosition, upDirection);
 		spotLight.proj = XMMatrixPerspectiveFovLH(fovRadians, 1.f, spotLight.zNear, spotLight.zFar);
@@ -33,7 +33,7 @@ namespace h2r
 	XMMATRIX CalculateShadowProjection(SpotLight const& spotLight)
 	{
 		// [-1,1] -> [0,1], flip V coord
-		static const XMMATRIX bias = XMMatrixSet(
+		static XMMATRIX const bias = XMMatrixSet(
 			.5f, .0f, 0.f, 0.f,
 			.0f,-.5f, 0.f, 0.f,
 			.0f, .0f, 1.f, 0.f,

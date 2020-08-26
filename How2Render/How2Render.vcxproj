@@ -116,6 +116,7 @@
     <ClInclude Include="Source\ObjModelLoader.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />
+    <ClInclude Include="Source\ShadowMapPass.hpp" />
     <ClInclude Include="Source\SpotLight.hpp" />
     <ClInclude Include="Source\TextureLoader.hpp" />
     <ClInclude Include="Source\Window.hpp" />
