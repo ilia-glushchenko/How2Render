@@ -19,7 +19,7 @@ SamplerComparisonState depthSampler : register(s1);
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer ConstantBuffer : register(b0)
+cbuffer TransformConstants : register(b0)
 {
 	matrix World;
 	matrix WorldView;
