@@ -8,14 +8,11 @@ SamplerState texSampler : register(s0);
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer ConstantBuffer : register(b0)
+cbuffer TransformConstants : register(b0)
 {
 	matrix World;
 	matrix WorldView;
 	matrix WorldViewProj;
-	matrix NormalMatrix;
-	matrix ShadowProj;
-	float4 LightViewPos;
 };
 
 //--------------------------------------------------------------------------------------
