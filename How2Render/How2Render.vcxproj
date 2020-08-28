@@ -93,7 +93,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
@@ -101,18 +103,46 @@
   <ItemGroup>
     <ClInclude Include="Source\Application.hpp" />
     <ClInclude Include="Source\Camera.hpp" />
+    <ClInclude Include="Source\Helpers\TextureLoader.hpp" />
+    <ClInclude Include="Source\Helpers\MipmapGenerator.hpp" />
+    <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp" />
+    <ClInclude Include="Source\Material.hpp" />
     <ClInclude Include="Source\Math.hpp" />
     <ClInclude Include="Source\Input.hpp" />
+    <ClInclude Include="Source\Mesh.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
+    <ClInclude Include="Source\RenderObject.hpp" />
     <ClInclude Include="Source\Window.hpp" />
+    <ClInclude Include="Source\Wrapper\IndexBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\Context.hpp" />
+    <ClInclude Include="Source\Wrapper\Sampler.hpp" />
     <ClInclude Include="Source\Wrapper\Shader.hpp" />
-    <ClInclude Include="Source\Wrapper\Swapchain.hpp" />
     <ClInclude Include="Source\Wrapper\Texture.hpp" />
     <ClInclude Include="Source\Wrapper\VertexBuffer.hpp" />
+    <ClInclude Include="Swapchain.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <FxCompile Include="Shaders\ForwardShading.fx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\ForwardShading_PS.hlsl">
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Shaders\ForwardShading_VS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
     <FxCompile Include="Shaders\PathTracer\PathTracer.fx">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -138,6 +168,7 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\sdl2.nuget.redist.2.0.12\build\native\sdl2.nuget.redist.targets" Condition="Exists('..\packages\sdl2.nuget.redist.2.0.12\build\native\sdl2.nuget.redist.targets')" />
     <Import Project="..\packages\sdl2.nuget.2.0.12\build\native\sdl2.nuget.targets" Condition="Exists('..\packages\sdl2.nuget.2.0.12\build\native\sdl2.nuget.targets')" />
+    <Import Project="..\packages\directxtk_desktop_2017.2020.7.3.1\build\native\directxtk_desktop_2017.targets" Condition="Exists('..\packages\directxtk_desktop_2017.2020.7.3.1\build\native\directxtk_desktop_2017.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -145,5 +176,6 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\sdl2.nuget.redist.2.0.12\build\native\sdl2.nuget.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.redist.2.0.12\build\native\sdl2.nuget.redist.targets'))" />
     <Error Condition="!Exists('..\packages\sdl2.nuget.2.0.12\build\native\sdl2.nuget.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.nuget.2.0.12\build\native\sdl2.nuget.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtk_desktop_2017.2020.7.3.1\build\native\directxtk_desktop_2017.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk_desktop_2017.2020.7.3.1\build\native\directxtk_desktop_2017.targets'))" />
   </Target>
 </Project>

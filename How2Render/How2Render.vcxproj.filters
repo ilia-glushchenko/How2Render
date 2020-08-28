@@ -18,6 +18,9 @@
     <Filter Include="Shaders\PathTracer">
       <UniqueIdentifier>{536a96e7-d407-440a-a2d4-e0f6e562aef3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Helpers">
+      <UniqueIdentifier>{7f5cc27c-cc09-4114-8b4d-e47a967ef928}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -40,10 +43,10 @@
     <ClInclude Include="Source\Application.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Wrapper\Texture.hpp">
+    <ClInclude Include="Source\Wrapper\Shader.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Wrapper\Shader.hpp">
+    <ClInclude Include="Swapchain.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp">
@@ -58,8 +61,32 @@
     <ClInclude Include="Source\Wrapper\Context.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Wrapper\Swapchain.hpp">
+    <ClInclude Include="Source\Wrapper\Sampler.hpp">
       <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\IndexBuffer.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\TextureLoader.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Texture.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\RenderObject.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Mesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\MipmapGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Material.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer.hpp">
       <Filter>Header Files</Filter>
@@ -74,6 +101,15 @@
     </FxCompile>
     <FxCompile Include="Shaders\PathTracer\PathTracer_VS.hlsl">
       <Filter>Shaders\PathTracer</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ForwardShading.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ForwardShading_PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ForwardShading_VS.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

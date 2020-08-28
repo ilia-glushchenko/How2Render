@@ -1,111 +1,76 @@
 #pragma once
 
-#include "Wrapper/Texture.hpp"
-#include "Wrapper/Context.hpp"
-#include "Wrapper/VertexBuffer.hpp"
+#include "Application.hpp"
 #include "Camera.hpp"
+#include "Helpers/SphereMeshGenerator.hpp"
 #include "Input.hpp"
-#include <d3d11.h>
+#include "RenderObject.hpp"
+#include "Wrapper/ConstantBuffer.hpp"
 #include <directxcolors.h>
 
-struct RenderTargets
+namespace h2r
 {
-	Texture first;
-	Texture second;
-};
-
-RenderTargets CreateRenderTargets(Context const& context, Window const& window)
-{
-	auto [aTextureResult, aTexture] = CreateTexture(context, window);
-	assert(aTextureResult);
-
-	auto [bTextureResult, bTexture] = CreateTexture(context, window);
-	assert(bTextureResult);
-
-	return { aTexture, bTexture };
-}
-
-void ReleaseRenderTargets(RenderTargets& rt)
-{
-	ReleaseTexture(rt.first);
-	ReleaseTexture(rt.second);
-}
-
-void RenderFrame(
-	VertexBuffer const& buffer,
-	HostConstantBuffer const& constantBuffer,
-	Application const& app,
-	RenderTargets const& targets,
-	Camera const& camera,
-	bool clearRenderTarget)
-{
-	Texture const& currentFrameTarget = constantBuffer.frameCount % 2 == 1 ? targets.first : targets.second;
-	Texture const& prevFrameTarget = constantBuffer.frameCount % 2 == 0 ? targets.first : targets.second;
-
-	// Clear the back buffer
-	if (clearRenderTarget)
+	void RenderFrame(
+		HostConstantBuffer const &constantBuffer,
+		Application const &app,
+		Camera const &camera,
+		RenderObject const &renderObject)
 	{
-		app.context.pImmediateContext->ClearRenderTargetView(
-			prevFrameTarget.renderTargetView, DirectX::Colors::Black);
-	}
-	app.context.pImmediateContext->OMSetRenderTargets(
-		1, &currentFrameTarget.renderTargetView, nullptr);
-	app.context.pImmediateContext->ClearRenderTargetView(
-		currentFrameTarget.renderTargetView, DirectX::Colors::Black);
+		app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView, DirectX::Colors::White);
 
-	// Update variables
-	app.context.pImmediateContext->UpdateSubresource(
-		app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
+		// Update variables
+		app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &constantBuffer, 0, 0);
 
-	// Render a triangle
-	app.context.pImmediateContext->VSSetShader(app.shaders.pVertexShader, nullptr, 0);
-	app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
-	app.context.pImmediateContext->PSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
+		// Setup vertex/pixel shader and bind sampler/texture
+		app.context.pImmediateContext->VSSetShader(app.shaders.pVertexShader, nullptr, 0);
+		app.context.pImmediateContext->VSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
+		app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
+		app.context.pImmediateContext->PSSetSamplers(0, 1, &renderObject.material.sampler);
+		app.context.pImmediateContext->PSSetShaderResources(0, 1, &renderObject.material.texture.shaderResourceView);
 
-	app.context.pImmediateContext->PSSetSamplers(0, 1, &prevFrameTarget.pSamplerLinear);
-	app.context.pImmediateContext->PSSetShaderResources(0, 1, &prevFrameTarget.shaderResourceView);
+		constexpr uint32_t stride = sizeof(Vertex);
+		constexpr uint32_t offset = 0;
+		DeviceMesh const &sphere = renderObject.mesh;
 
-	app.context.pImmediateContext->Draw(3, 0);
-	ID3D11ShaderResourceView* const pSRV[1] = { nullptr };
-	app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
+		// Render sphere
+		app.context.pImmediateContext->IASetVertexBuffers(0, 1, &sphere.vertexBuffer.pVertexBuffer, &stride, &offset);
+		app.context.pImmediateContext->IASetIndexBuffer(sphere.indexBuffer.pIndexBuffer, sphere.indexBuffer.indexFormat, 0);
+		app.context.pImmediateContext->IASetPrimitiveTopology(sphere.topology);
+		app.context.pImmediateContext->DrawIndexed(sphere.indexBuffer.indexCount, 0, 0);
 
-	// Present the information rendered to the back buffer to the front buffer (the screen)
-	app.context.pImmediateContext->CopyResource(app.swapchain.pBackBuffer, currentFrameTarget.texture);
-	app.swapchain.pSwapChain->Present(0, 0);
-}
+		ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
+		app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
 
-void RenderLoop(Window& window)
-{
-	Camera camera = CreateDefaultCamera();
-	InputEvents inputEvents = CreateDefaultInputEvents();
-	Application application = CreateApplication(window);
-	VertexBuffer vertexBuffer = CreateVertexBuffer(application.context);
-	RenderTargets renderTargets = CreateRenderTargets(application.context, window);
-
-	HostConstantBuffer constBuffer;
-	constBuffer.frameCount = 1;
-	constBuffer.screenWidth = 640;
-	constBuffer.screenHeight = 640;
-
-	while (!inputEvents.quit)
-	{
-		UpdateInput(inputEvents);
-		bool const clearRenderTarget = UpdateCamera(camera, inputEvents, window);
-		constBuffer.frameCount = clearRenderTarget ? 1 : constBuffer.frameCount;
-		constBuffer.view = XMMatrixTranspose(camera.view);
-
-		RenderFrame(
-			vertexBuffer,
-			constBuffer,
-			application,
-			renderTargets,
-			camera,
-			clearRenderTarget);
-
-		constBuffer.frameCount++;
+		// Present the information rendered to the back buffer to the front buffer (the screen)
+		app.swapchain.pSwapChain->Present(0, 0);
 	}
 
-	ReleaseRenderTargets(renderTargets);
-	CleanupBuffer(vertexBuffer);
-	CleanupApplication(application);
-}
+	void MainLoop()
+	{
+		Window window = CreateNewWindow(640, 640);
+		Camera camera = CreateDefaultCamera();
+		InputEvents inputEvents = CreateDefaultInputEvents();
+		Application application = CreateApplication(window);
+		RenderObject renderObject = GenerateSphereRenderObject(application.context);
+
+		HostConstantBuffer constBuffer;
+
+		while (!inputEvents.quit)
+		{
+			UpdateInput(inputEvents);
+			UpdateCamera(camera, inputEvents, window);
+			constBuffer.worldViewProj = renderObject.world * camera.viewProj;
+
+			RenderFrame(
+				constBuffer,
+				application,
+				camera,
+				renderObject);
+		}
+
+		CleanupRenderObject(renderObject);
+		CleanupApplication(application);
+		DestroyWindow(window);
+	}
+
+} // namespace h2r

@@ -2,10 +2,12 @@
 
 #include "Math.hpp"
 
-struct HostConstantBuffer
+namespace h2r
 {
-	XMMATRIX view;
-	uint32_t screenWidth;
-	uint32_t screenHeight;
-	uint32_t frameCount;
-};
+
+	struct HostConstantBuffer
+	{
+		XMMATRIX worldViewProj;
+	};
+
+} // namespace h2r
