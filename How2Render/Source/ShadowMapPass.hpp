@@ -2,15 +2,15 @@
 
 #include "Application.hpp"
 #include "RenderObject.hpp"
-#include "SpotLight.hpp"
+#include "DirectionalLight.hpp"
 
 namespace h2r
 {
-	void ShadowMapPass(Application const& app, std::vector<RenderObject> const& renderObjects, SpotLight const& spotLight)
+	void ShadowMapPass(Application const& app, std::vector<RenderObject> const& renderObjects, DirectionalLight const& lightSource)
 	{
 		D3D11_VIEWPORT viewport, oldViewport;
 		UINT numViewports = 1;
-		auto shadowMap = spotLight.shadowMap;
+		auto shadowMap = lightSource.shadowMap;
 
 		viewport.Width = (float)shadowMap.texture.width;
 		viewport.Height = (float)shadowMap.texture.height;
@@ -21,7 +21,7 @@ namespace h2r
 
 		app.context.pImmediateContext->RSGetViewports(&numViewports, &oldViewport);
 		app.context.pImmediateContext->RSSetViewports(1, &viewport);
-		app.context.pImmediateContext->ClearDepthStencilView(spotLight.shadowMap.pDepthStencilView, D3D11_CLEAR_DEPTH, 1.f, 0);
+		app.context.pImmediateContext->ClearDepthStencilView(lightSource.shadowMap.pDepthStencilView, D3D11_CLEAR_DEPTH, 1.f, 0);
 
 		app.context.pImmediateContext->VSSetShader(app.shaders.pDepthVertexShader, nullptr, 0);
 		app.context.pImmediateContext->VSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
@@ -38,12 +38,12 @@ namespace h2r
 		transforms.worldView = XMMatrixIdentity();
 		transforms.normal = XMMatrixIdentity();
 		transforms.shadowProj = XMMatrixIdentity();
-		transforms.lightViewPos = XMVectorZero();
+		transforms.lightViewDir = XMVectorZero();
 
 		for (auto const& object : renderObjects)
 		{
 			// Update transform
-			transforms.worldViewProj = XMMatrixMultiply(object.world, spotLight.viewProj);
+			transforms.worldViewProj = XMMatrixMultiply(object.world, lightSource.viewProj);
 			app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &transforms, 0, 0);
 
 			DrawModel(object.model, app.context, app.shaders, app.blendStates);

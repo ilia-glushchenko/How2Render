@@ -103,13 +103,13 @@
     <ClInclude Include="Source\Wrapper\Swapchain.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="Source\SpotLight.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Helpers\GroundMeshGenerator.hpp">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
     <ClInclude Include="Source\ShadowMapPass.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\DirectionalLight.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

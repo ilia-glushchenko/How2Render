@@ -26,7 +26,7 @@ cbuffer TransformConstants : register(b0)
 	matrix WorldViewProj;
 	matrix NormalMatrix;
 	matrix ShadowProj;
-	float4 LightViewPos;
+	float4 LightViewDir;
 }
 
 cbuffer MaterialConstants : register(b1)
@@ -100,6 +100,7 @@ float pcf(float4 shadowPos, float radius, float bias)
 	float sum = 0.;
 	for (int i = 0; i < PCF_SAMPLES; ++i)
 	{
+		// Compare z coordinate with depth stored in the shadow map
 		float2 offset = poisson[i] * normalizedRadius;
 		sum += txShadowMap.SampleCmpLevelZero(depthSampler, shadowPos.xy + offset, shadowPos.z);
 	}
@@ -119,21 +120,21 @@ float4 PS(PS_INPUT input) : SV_Target
 		discard;
 
 	float3 n = normalize(input.ViewNormal);
-	float3 l = normalize(LightViewPos - input.ViewPos.xyz);
 	float3 v = normalize(-input.ViewPos.xyz);
+	float3 l = LightViewDir;
 
 	float3 Kambient = ambient * Ambient;
 	float3 Kdiff = albedo.rgb * Diffuse;
 	float3 Kspec = specular * Specular;
 
-	// Compare .z coordinate with depth stored in shadow map
-	float4 clipPos = mul(ShadowProj, input.WorldPos);
-	const float bias = 0.00025;
+	float4 shadowPos = mul(ShadowProj, input.WorldPos);
+	const float bias = 0.001;
+	// No need to divide by w because of orthographic projection
 #ifdef USE_PCF
-	float shadow = pcf(clipPos/clipPos.w, 4.0, bias);
+	float shadow = pcf(shadowPos, 4.0, bias);
 #else
-	float3 shadowPos = clipPos.xyz/clipPos.w;
 	shadowPos.z -= bias;
+	// Compare z coordinate with depth stored in the shadow map
 	float shadow = txShadowMap.SampleCmpLevelZero(depthSampler, shadowPos.xy, shadowPos.z);
 #endif
 

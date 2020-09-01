@@ -46,7 +46,7 @@ namespace h2r
 		constexpr float radius = 10.f;
 		constexpr int materialId = 0;
 
-		DeviceMesh sphereMesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, radius, 64), materialId);
+		DeviceMesh sphereMesh = CreateDeviceMesh(context, GenerateSphereHostMesh(context, radius, 32), materialId);
 
 		DeviceModel model;
 		model.meshes.push_back(sphereMesh);

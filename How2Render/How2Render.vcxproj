@@ -117,7 +117,7 @@
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />
     <ClInclude Include="Source\ShadowMapPass.hpp" />
-    <ClInclude Include="Source\SpotLight.hpp" />
+    <ClInclude Include="Source\DirectionalLight.hpp" />
     <ClInclude Include="Source\TextureLoader.hpp" />
     <ClInclude Include="Source\Window.hpp" />
     <ClInclude Include="Source\Wrapper\BlendState.hpp" />

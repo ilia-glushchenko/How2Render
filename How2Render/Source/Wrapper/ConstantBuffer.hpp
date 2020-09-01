@@ -11,7 +11,7 @@ namespace h2r
 		XMMATRIX worldViewProj;
 		XMMATRIX normal;
 		XMMATRIX shadowProj;
-		XMVECTOR lightViewPos;
+		XMVECTOR lightViewDir;
 	};
 
 	struct MaterialConstantBuffer

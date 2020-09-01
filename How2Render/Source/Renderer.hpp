@@ -13,9 +13,9 @@ namespace h2r
 		Application const& app,
 		Camera const& camera,
 		std::initializer_list<RenderObject> const& renderObjects,
-		SpotLight const& spotLight)
+		DirectionalLight const& lightSource)
 	{
-		ShadowMapPass(app, renderObjects, spotLight);
+		ShadowMapPass(app, renderObjects, lightSource);
 
 		// Bind color and depth/stencil render targets
 		app.context.pImmediateContext->OMSetRenderTargets(1, &app.swapchain.pRenderTargetView, app.swapchain.pDepthStencilView);
@@ -31,21 +31,23 @@ namespace h2r
 		app.context.pImmediateContext->PSSetShader(app.shaders.pPixelShader, nullptr, 0);
 		app.context.pImmediateContext->PSSetConstantBuffers(0, 1, &app.shaders.pConstantBuffer);
 		app.context.pImmediateContext->PSSetConstantBuffers(1, 1, &app.shaders.pMaterialConstants);
-		app.context.pImmediateContext->PSSetShaderResources(MaxMaterialTextures, 1, &spotLight.shadowMap.texture.pShaderResourceView);
+		app.context.pImmediateContext->PSSetShaderResources(MaxMaterialTextures, 1, &lightSource.shadowMap.texture.pShaderResourceView);
 		app.context.pImmediateContext->PSSetSamplers(0, 1, &app.shaders.pTrilinearSampler);
 		app.context.pImmediateContext->PSSetSamplers(1, 1, &app.shaders.pDepthComparisonSampler);
 
+		XMVECTOR det;
+		XMMATRIX const normal = XMMatrixTranspose(XMMatrixInverse(&det, camera.view));
+		TransformConstantBuffer transforms;
+
+		transforms.shadowProj = CalculateShadowProjection(lightSource);
+		transforms.lightViewDir = XMVector3Transform(lightSource.direction, normal);
+
 		for (auto const& object : renderObjects)
 		{
-			TransformConstantBuffer transforms;
-			XMVECTOR det;
-
 			transforms.world = object.world;
 			transforms.worldView = XMMatrixMultiply(object.world, camera.view);
 			transforms.worldViewProj = XMMatrixMultiply(object.world, camera.viewProj);
 			transforms.normal = XMMatrixTranspose(XMMatrixInverse(&det, transforms.worldView));
-			transforms.shadowProj = CalculateShadowProjection(spotLight);
-			transforms.lightViewPos = XMVector3Transform(spotLight.position, camera.view);
 
 			// Update transform
 			app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &transforms, 0, 0);
@@ -69,7 +71,7 @@ namespace h2r
 		InputEvents inputEvents = CreateDefaultInputEvents();
 		Application application = CreateApplication(window);
 		TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
-		SpotLight spotLight = CreateDefaultSpotLight(application.context);
+		DirectionalLight lightSource = CreateDirectionalLight(application.context);
 		auto ground = GenerateGroundRenderObject(textureLoader);
 		auto sphere = GenerateSphereRenderObject(textureLoader);
 		auto [result, tree] = CreateRenderObject("Models\\white_oak\\white_oak.obj", textureLoader, 0.1f);
@@ -86,13 +88,13 @@ namespace h2r
 				application,
 				camera,
 				{ground, sphere, tree},
-				spotLight
+				lightSource
 			);
 		}
 
 		FreeRenderObject(ground);
 		FreeRenderObject(tree);
-		FreeSpotLight(spotLight);
+		FreeDirectionalLight(lightSource);
 		FreeTextureLoader(textureLoader);
 		CleanupApplication(application);
 		DestroyWindow(window);
