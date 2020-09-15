@@ -1,135 +1,64 @@
 #pragma once
+
 #include "Helpers/MipmapGenerator.hpp"
+#include "Helpers/TextureCache.hpp"
 #include "ThirdParty/stb_image.h"
 #include "Wrapper/Texture.hpp"
 #include <cstdio>
-#include <map>
+#include <filesystem>
 #include <string>
 #include <tuple>
 
 namespace h2r
 {
 
-	struct TextureLoader
+	using TextureLoadFlags = uint32_t;
+	constexpr TextureLoadFlags TEX_LOAD_FLAG_FLIP_VERTICALLY = 1;
+	constexpr TextureLoadFlags TEX_LOAD_FLAG_GEN_MIPMAP = 2;
+
+	inline std::tuple<bool, HostTexture> LoadTextureFromFile(
+		TextureCache &cache,
+		std::filesystem::path path,
+		TextureLoadFlags flags)
 	{
-		Context context;
-		std::string baseDir = ".";
-		bool flipVertically = true;
-		bool generateMipmap = true;
-		std::map<std::string, DeviceTexture> textureCache;
-	};
-
-	TextureLoader CreateTextureLoader(Context const &context, bool flipVertically, bool generateMipmap,
-									  const std::string &baseDir = ".")
-	{
-		TextureLoader loader;
-
-		loader.context = context;
-		loader.flipVertically = flipVertically;
-		loader.generateMipmap = generateMipmap;
-		loader.baseDir = baseDir;
-
-		return loader;
-	}
-
-	void FreeTextureLoader(TextureLoader &loader)
-	{
-		for (auto &tex : loader.textureCache)
+		if (path.empty() || !path.has_filename())
 		{
-			ReleaseTexture(tex.second);
+			return {false, HostTexture{}};
 		}
 
-		loader.textureCache.clear();
-	}
-
-	std::tuple<bool, DeviceTexture> FindCachedTexture(TextureLoader const &loader, std::string const &name)
-	{
-		auto it = loader.textureCache.find(name);
-		if (it != loader.textureCache.end())
-		{
-			return {true, it->second};
-		}
-
-		return {false, DeviceTexture{}};
-	}
-
-	std::tuple<bool, HostTexture> LoadHostTextureFromFile(TextureLoader const &loader, const std::string &path)
-	{
-		HostTexture hostTexture;
-		int width, height, comp;
-
-		stbi_set_flip_vertically_on_load(loader.flipVertically);
-		auto *pixels = stbi_load(path.c_str(), &width, &height, &comp, STBI_rgb_alpha);
-		if (!pixels)
-		{
-			return {false, hostTexture};
-		}
-
-		hostTexture.pixels = (uint8_t *)pixels;
-		hostTexture.width = width;
-		hostTexture.height = height;
-		hostTexture.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-
-		uint32_t const imageSize = (uint32_t)(width * height * sizeof(RGBQUAD));
-		hostTexture.mipChain.push_back(
-			HostTextureMipLevel{
-				hostTexture.width,
-				hostTexture.height,
-				0U,
-				imageSize,
-				hostTexture.pixels});
-
-		return {true, hostTexture};
-	}
-
-	void CleanupHostTexture(HostTexture &hostTexture)
-	{
-		if (hostTexture.pixels != nullptr)
-		{
-			stbi_image_free(hostTexture.pixels);
-			hostTexture.pixels = nullptr;
-		}
-
-		hostTexture.width = hostTexture.height = 0;
-		hostTexture.mipChain.clear();
-	}
-
-	std::tuple<bool, DeviceTexture> LoadDeviceTextureFromFile(TextureLoader &loader, std::string const &fileName)
-	{
-		if (fileName.empty())
-		{
-			return {false, DeviceTexture{}};
-		}
-
-		std::string const filePath = loader.baseDir + "\\" + fileName;
-		auto [found, cachedTexture] = FindCachedTexture(loader, filePath);
-		if (found)
+		auto [cacheFound, cachedTexture] = FindCachedHostTexture(cache, path);
+		if (HasCachedHostTexture(cache, path))
 		{
 			return {true, cachedTexture};
 		}
 
-		printf("Load texture %s\n", filePath.c_str());
+		stbi_set_flip_vertically_on_load(flags & TEX_LOAD_FLAG_FLIP_VERTICALLY);
 
-		auto [loadResult, hostTexture] = LoadHostTextureFromFile(loader, filePath);
-		if (!loadResult)
+		int32_t width, height, comp;
+		auto *pixels = stbi_load(path.string().c_str(), &width, &height, &comp, STBI_rgb_alpha);
+		if (!pixels)
 		{
-			return {false, DeviceTexture{}};
+			wprintf(L"Failed to load texture: '%s'\n", path.c_str());
+			return {false, HostTexture{}};
 		}
+		wprintf(L"Loaded texture %s\n", path.filename().c_str());
 
-		if (loader.generateMipmap)
+		HostTexture::Descriptor desc;
+		desc.path = path;
+		desc.pixels = (uint8_t *)pixels;
+		desc.width = width;
+		desc.height = height;
+		desc.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+
+		HostTexture hostTexture = CreateHostTexture(desc);
+		if (flags & TEX_LOAD_FLAG_GEN_MIPMAP)
 		{
 			GenerateMipmap(hostTexture);
 		}
 
-		auto [textureResult, deviceTexture] = CreateTexture(loader.context, hostTexture);
-		if (!textureResult)
-		{
-			return {false, DeviceTexture{}};
-		}
+		CacheHostTexture(cache, hostTexture);
 
-		CleanupHostTexture(hostTexture);
-		loader.textureCache.emplace(filePath, deviceTexture);
-		return {true, deviceTexture};
+		return {true, hostTexture};
 	}
 
 } // namespace h2r

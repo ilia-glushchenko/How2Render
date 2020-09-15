@@ -2,68 +2,170 @@
 
 #include "Application.hpp"
 #include "Camera.hpp"
-#include "Helpers/SphereMeshGenerator.hpp"
+#include "ForwardShading.hpp"
+#include "Helpers/MeshGenerator.hpp"
+#include "Helpers/TextureCache.hpp"
 #include "Input.hpp"
 #include "RenderObject.hpp"
+#include "UserInterface.hpp"
 #include "Wrapper/ConstantBuffer.hpp"
+#include "Wrapper/RenderTarget.hpp"
+#include "Wrapper/Texture.hpp"
 #include <directxcolors.h>
 
 namespace h2r
 {
 
-	void RenderFrame(
-		TransformConstantBuffer const &transforms,
-		Application const &app,
-		Camera const &camera,
-		RenderObject const &renderObject)
+	inline RenderObjectStorage LoadRenderObjectStorage(Context const &context, TextureCache &cache)
 	{
-		app.context.pImmediateContext->ClearRenderTargetView(app.swapchain.pRenderTargetView, DirectX::Colors::White);
-		app.context.pImmediateContext->ClearDepthStencilView(app.swapchain.pDepthStencilView,
-															 D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+		HostModel const sponzaHostModel = LoadObjModel("Data\\Models\\sponza\\sponza.obj", cache).value();
+		DeviceModel const sponzaDeviceModel = CreateDeviceModel(context, cache, sponzaHostModel);
+		RenderObject const sponzaRenderObject = CreateRenderObject(sponzaDeviceModel, {0, 0, 0}, {0, 0, 0}, 0.1f);
 
-		// Update variables
-		app.context.pImmediateContext->UpdateSubresource(app.shaders.pConstantBuffer, 0, nullptr, &transforms, 0, 0);
+		std::vector<RenderObject> opaqueObjects = {sponzaRenderObject};
+		std::vector<RenderObject> translucentObjects = GenerateSpheres(context, cache);
 
-		// Draw model with multiple meshes and materials
-		DrawModel(app.context, app.shaders, renderObject.model);
-
-		ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
-		app.context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
-
-		// Present the information rendered to the back buffer to the front buffer (the screen)
-		app.swapchain.pSwapChain->Present(0, 0);
+		return RenderObjectStorage{opaqueObjects, translucentObjects};
 	}
 
-	void MainLoop()
+	inline void CleanupRenderObjectStorage(RenderObjectStorage &storage)
 	{
-		Window window = CreateNewWindow(1280, 720);
-		Camera camera = CreateDefaultCamera();
-		InputEvents inputEvents = CreateDefaultInputEvents();
-		Application application = CreateApplication(window);
-		TextureLoader textureLoader = CreateTextureLoader(application.context, true, true);
-		auto [result, renderObject] = CreateRenderObject("Data\\Models\\sponza\\sponza.obj", textureLoader, 0.1f);
-		assert(result);
-		TransformConstantBuffer transforms;
-
-		while (!inputEvents.quit)
+		for (auto &object : storage.opaque)
 		{
-			UpdateInput(inputEvents);
-			UpdateCamera(camera, inputEvents, window);
-			transforms.world = renderObject.world;
-			transforms.worldViewProj = renderObject.world * camera.viewProj;
-			transforms.cameraWorldPos = camera.position;
+			CleanupRenderObject(object);
+		}
+		for (auto &object : storage.translucent)
+		{
+			CleanupRenderObject(object);
+		}
+	}
 
-			RenderFrame(
-				transforms,
-				application,
-				camera,
-				renderObject);
+	inline void UpdatePerFrameConstantBuffers(
+		Context const &context,
+		DeviceConstBuffers const &cbuffers,
+		Camera const &camera)
+	{
+		CameraHostConstBuffer cameraConstants;
+		cameraConstants.positionVector = camera.position;
+		cameraConstants.projMatrix = camera.proj;
+		cameraConstants.viewMatrix = camera.view;
+
+		context.pImmediateContext->UpdateSubresource(cbuffers.pCameraConstants, 0, nullptr, &cameraConstants, 0, 0);
+	}
+
+	inline void SortTranslucentRenderObjects(Camera const &camera, std::vector<RenderObject> &translucentObjects)
+	{
+		std::sort(translucentObjects.begin(), translucentObjects.end(), [&camera](auto const &a, auto const &b) {
+			auto const aLength = std::abs(XMVector3Length(a.transform.position - camera.position).m128_f32[0]);
+			auto const bLength = std::abs(XMVector3Length(b.transform.position - camera.position).m128_f32[0]);
+			return aLength > bLength;
+		});
+	}
+
+	inline void DrawTransluent(
+		Context const &context,
+		ForwardShaders const &shaders,
+		Application::States const &states,
+		std::vector<RenderObject> const &renderObjects)
+	{
+		if (states.drawTranslucent)
+		{
+			BindBlendState(context, shaders.blendStates.normal);
+			BindShaders(context, shaders.translucentPass);
+			BindConstantBuffers(context, shaders.cbuffers);
+			BindSamplers(context, shaders.samplers);
+
+			for (auto const &object : renderObjects)
+			{
+				for (auto const &mesh : object.model.transparentMeshes)
+				{
+					UpdatePerMeshConstantBuffer(
+						context,
+						shaders.cbuffers,
+						object.model.materials,
+						mesh,
+						object.transform);
+
+					Draw(context, mesh);
+				}
+			}
+		}
+	}
+
+	inline void DrawUI(
+		Window const &window,
+		Context const &context,
+		Application::States &states,
+		Camera &camera)
+	{
+		BeginDrawUI(window);
+
+		if (states.showSideBarWindow)
+		{
+			ImGui::Begin("Settings", &states.showSideBarWindow);
+			ImGui::Text("Camera position");
+			ImGui::InputFloat3("Position", camera.position.m128_f32, 2);
+			ImGui::Checkbox("Draw opaque", &states.drawOpaque);
+			ImGui::Checkbox("Draw transparent", &states.drawTransparent);
+			ImGui::Checkbox("Draw translucent", &states.drawTranslucent);
+			ImGui::End();
 		}
 
-		FreeRenderObject(renderObject);
-		FreeTextureLoader(textureLoader);
-		CleanupApplication(application);
-		DestroyWindow(window);
+		EndDrawUI();
+	}
+
+	inline void Present(
+		Context const &context,
+		Swapchain const &swapchain,
+		RenderTargetView const &sourceView,
+		RenderTargetView const &presentView)
+	{
+		// Unbind shader recourses and present
+		ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
+		context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
+
+		// Blit off screen texture to back buffer
+		context.pImmediateContext->CopyResource(presentView.renderTargetTexture, sourceView.renderTargetTexture);
+		swapchain.pSwapChain->Present(0, 0);
+	}
+
+	inline void MainLoop()
+	{
+		Window window = CreateNewWindow(1200, 720);
+		Camera camera = CreateDefaultCamera();
+		InputEvents inputs = CreateDefaultInputEvents();
+		Application app = CreateApplication(window);
+		RenderTargets renderTargets = CreateRenderTargets(app.context, window, app.swapchain).value();
+
+		TextureCache textureCache;
+		RenderObjectStorage storage = LoadRenderObjectStorage(app.context, textureCache);
+		RenderTargetViews renderTargetViews = CreateRenderTargetViews(renderTargets);
+
+		while (!inputs.quit)
+		{
+			UpdateInput(inputs);
+			UpdateCamera(camera, inputs, window);
+			UpdatePerFrameConstantBuffers(app.context, app.forwardShaders.cbuffers, camera);
+
+			BindRenderTargetView(app.context, renderTargetViews.shadingPass);
+			ClearRenderTargetView(app.context, renderTargetViews.shadingPass);
+			ShadeForward(app.context, app.forwardShaders, app.states, storage.opaque);
+
+			BindRenderTargetView(app.context, renderTargetViews.translucencyPass);
+			SortTranslucentRenderObjects(camera, storage.translucent);
+			DrawTransluent(app.context, app.forwardShaders, app.states, storage.translucent);
+
+			DrawUI(window, app.context, app.states, camera);
+
+			BindRenderTargetView(app.context, renderTargetViews.presentPass);
+			Present(app.context, app.swapchain, renderTargetViews.translucencyPass, renderTargetViews.presentPass);
+		}
+
+		CleanupRenderTargets(renderTargets);
+		CleanupRenderObjectStorage(storage);
+		FlushTextureCache(textureCache);
+		CleanupApplication(app);
+		CleanupWindow(window);
 	}
 
 } // namespace h2r

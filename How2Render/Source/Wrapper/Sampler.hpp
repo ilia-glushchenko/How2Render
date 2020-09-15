@@ -6,12 +6,26 @@
 namespace h2r
 {
 
+	struct TextureSamplers
+	{
+		ID3D11SamplerState *pPointSampler = nullptr;
+		ID3D11SamplerState *pBilinearSampler = nullptr;
+		ID3D11SamplerState *pTrilinearSampler = nullptr;
+	};
+
 	enum class eTextureSamplerFilterType : uint8_t
 	{
 		Point = 0,
 		Bilinear,
 		Trilinear
 	};
+
+	inline void BindSamplers(
+		Context const &context,
+		TextureSamplers const &samplers)
+	{
+		context.pImmediateContext->PSSetSamplers(0, 1, &samplers.pTrilinearSampler);
+	}
 
 	inline ID3D11SamplerState *CreateSampler(Context const &context, eTextureSamplerFilterType filterType)
 	{
@@ -46,11 +60,41 @@ namespace h2r
 		return samplerState;
 	}
 
-	inline void ReleaseSampler(ID3D11SamplerState *sampler)
+	inline void CleanupSampler(ID3D11SamplerState *sampler)
 	{
 		if (sampler)
 		{
 			sampler->Release();
+		}
+	}
+
+	inline TextureSamplers CreateTextureSamplers(Context const &context)
+	{
+		TextureSamplers textureSamplers;
+
+		textureSamplers.pPointSampler = CreateSampler(context, eTextureSamplerFilterType::Point);
+		textureSamplers.pBilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Bilinear);
+		textureSamplers.pTrilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Trilinear);
+
+		return textureSamplers;
+	}
+
+	inline void CleanupTextureSamplers(TextureSamplers &textureSamplers)
+	{
+		if (textureSamplers.pPointSampler != nullptr)
+		{
+			textureSamplers.pPointSampler->Release();
+			textureSamplers.pPointSampler = nullptr;
+		}
+		if (textureSamplers.pBilinearSampler != nullptr)
+		{
+			textureSamplers.pBilinearSampler->Release();
+			textureSamplers.pBilinearSampler = nullptr;
+		}
+		if (textureSamplers.pTrilinearSampler != nullptr)
+		{
+			textureSamplers.pTrilinearSampler->Release();
+			textureSamplers.pTrilinearSampler = nullptr;
 		}
 	}
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UserInterface.hpp"
 #include "Window.hpp"
 #include "Wrapper/Context.hpp"
 #include "Wrapper/Shader.hpp"
@@ -10,9 +11,18 @@ namespace h2r
 
 	struct Application
 	{
+		struct States
+		{
+			bool showSideBarWindow = true;
+			bool drawOpaque = true;
+			bool drawTransparent = true;
+			bool drawTranslucent = true;
+		};
+
 		Context context;
 		Swapchain swapchain;
-		Shaders shaders;
+		ForwardShaders forwardShaders;
+		States states;
 	};
 
 	inline Application CreateApplication(Window &window)
@@ -21,16 +31,18 @@ namespace h2r
 
 		app.context = CreateContext();
 		app.swapchain = CreateSwapchain(window, app.context);
-		app.shaders = CreateShaders(app.context);
+		app.forwardShaders = CreateForwardShaders(app.context);
+		InitUI(window, app.context);
 
 		return app;
 	}
 
 	inline void CleanupApplication(Application &application)
 	{
+		CleanupUI();
 		CleanupContext(application.context);
 		CleanupSwapchain(application.swapchain);
-		CleanupShaders(application.shaders);
+		CleanupForwardShaders(application.forwardShaders);
 	}
 
 } // namespace h2r

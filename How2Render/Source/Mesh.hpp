@@ -20,18 +20,18 @@ namespace h2r
 	{
 		std::vector<Vertex> vertices;
 		std::vector<uint32_t> indices;
+		int32_t materialId = InvalidMaterialId;
 	};
 
 	struct DeviceMesh
 	{
 		VertexBuffer vertexBuffer;
 		IndexBuffer indexBuffer;
-		int materialId = InvalidMaterialId;
+		int32_t materialId = InvalidMaterialId;
 		D3D11_PRIMITIVE_TOPOLOGY topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	};
 
-	inline DeviceMesh CreateDeviceMesh(Context const &context, HostMesh const &hostMesh,
-									   int materialId = InvalidMaterialId)
+	inline DeviceMesh CreateDeviceMesh(Context const &context, HostMesh const &hostMesh)
 	{
 		DeviceMesh mesh;
 
@@ -40,15 +40,15 @@ namespace h2r
 		{
 			mesh.indexBuffer = CreateIndexBuffer(context, hostMesh.indices);
 		}
-		mesh.materialId = materialId;
+		mesh.materialId = hostMesh.materialId;
 
 		return mesh;
 	}
 
 	inline void CleanupDeviceMesh(DeviceMesh &mesh)
 	{
-		ReleaseVertexBuffer(mesh.vertexBuffer);
-		ReleaseIndexBuffer(mesh.indexBuffer);
+		CleanupVertexBuffer(mesh.vertexBuffer);
+		CleanupIndexBuffer(mesh.indexBuffer);
 	}
 
 } // namespace h2r

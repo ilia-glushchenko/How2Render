@@ -1,7 +1,3 @@
-//--------------------------------------------------------------------------------------
-// Constants
-//--------------------------------------------------------------------------------------
-static const float3 SunDir = float3(-1, 1, 1);
 
 //--------------------------------------------------------------------------------------
 // Texture Samplers
@@ -47,9 +43,7 @@ struct VS_INPUT
 struct PS_INPUT
 {
 	float4 Pos : SV_POSITION;
-	float3 Normal : NORMAL;
 	float2 Tex : TEXCOORD0;
-	float3 WorldPos : TEXCOORD1;
 };
 
 //--------------------------------------------------------------------------------------
@@ -60,9 +54,7 @@ PS_INPUT VS(VS_INPUT input)
 	PS_INPUT output = (PS_INPUT)0;
 	matrix MVP = mul(mul(Proj, View), World);
 	output.Pos = mul(MVP, float4(input.Pos, 1.f));
-	output.Normal = input.Normal;
 	output.Tex = input.Tex;
-	output.WorldPos = mul(World, float4(input.Pos, 1)).xyz;
 	return output;
 }
 
@@ -71,23 +63,6 @@ PS_INPUT VS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 float4 PS(PS_INPUT input) : SV_Target
 {
-	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb;
-	float4 albedo = txAlbedo.Sample(texSampler, input.Tex).rgba;
-	float3 specular = txSpecular.Sample(texSampler, input.Tex).rgb;
-
-	float3 n = normalize(input.Normal);
-	float3 v = normalize(CameraPos.xyz - input.WorldPos);
-	float3 l = normalize(SunDir);
-
-	float3 Kambient = ambient * Ambient;
-	float3 Kdiff = albedo.rgb * Diffuse;
-	float3 Kspec = specular * Specular;
-
-	// Phong BRDF
-	float NdL = max(dot(n, l), 0.);
-	float3 r = reflect(-l, n);
-	float RdV = max(dot(r, v), 0.);
-	float3 color = Kambient + Kdiff * NdL + pow(RdV, Shininess) * Kspec;
-
-	return float4(color, albedo.a);
+	float3 albedo = txAlbedo.Sample(texSampler, input.Tex).rgb;
+	return float4(albedo, Alpha);
 }

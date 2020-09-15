@@ -7,21 +7,21 @@
 namespace h2r
 {
 
-	inline RGBQUAD *GetTexel(HostTextureMipLevel &mipLevel, uint32_t col, uint32_t row)
+	inline RGBQUAD *GetTexel(HostTexture::MipLevel &mipLevel, uint32_t col, uint32_t row)
 	{
 		const uint32_t index = row * mipLevel.width + col;
 		const size_t offset = index * sizeof(RGBQUAD);
 		return (RGBQUAD *)(mipLevel.data + offset);
 	}
 
-	inline const RGBQUAD *GetTexel(HostTextureMipLevel const &mipLevel, uint32_t col, uint32_t row)
+	inline const RGBQUAD *GetTexel(HostTexture::MipLevel const &mipLevel, uint32_t col, uint32_t row)
 	{
 		const uint32_t index = row * mipLevel.width + col;
 		const size_t offset = index * sizeof(RGBQUAD);
 		return (const RGBQUAD *)(mipLevel.data + offset);
 	}
 
-	inline void BoxDownsample(HostTextureMipLevel &nextMip, HostTextureMipLevel const &currMip)
+	inline void BoxDownsample(HostTexture::MipLevel &nextMip, HostTexture::MipLevel const &currMip)
 	{
 		for (uint32_t j = 0; j < currMip.height; j += 2)
 		{
@@ -41,9 +41,9 @@ namespace h2r
 		}
 	}
 
-	inline std::vector<HostTextureMipLevel> CalculateMipChain(HostTexture const &image)
+	inline std::vector<HostTexture::MipLevel> CalculateMipChain(HostTexture const &image)
 	{
-		HostTextureMipLevel mipLevel;
+		HostTexture::MipLevel mipLevel;
 
 		mipLevel.width = image.width;
 		mipLevel.height = image.height;
@@ -51,7 +51,7 @@ namespace h2r
 		mipLevel.byteSize = mipLevel.width * mipLevel.height * sizeof(RGBQUAD);
 		mipLevel.data = nullptr;
 
-		std::vector<HostTextureMipLevel> mipChain;
+		std::vector<HostTexture::MipLevel> mipChain;
 
 		while (true)
 		{
@@ -92,14 +92,14 @@ namespace h2r
 		}
 
 		image.mipChain = std::move(mipChain);
-		HostTextureMipLevel &firstMip = image.mipChain.front();
+		HostTexture::MipLevel &firstMip = image.mipChain.front();
 		memcpy(mipPixels, image.pixels, firstMip.byteSize);
 		firstMip.data = mipPixels;
 
 		for (size_t i = 1; i < image.mipChain.size(); ++i)
 		{
-			const HostTextureMipLevel &currMip = image.mipChain[i - 1];
-			HostTextureMipLevel &nextMip = image.mipChain[i];
+			const HostTexture::MipLevel &currMip = image.mipChain[i - 1];
+			HostTexture::MipLevel &nextMip = image.mipChain[i];
 			nextMip.data = currMip.data + currMip.byteSize;
 			BoxDownsample(nextMip, currMip);
 		}

@@ -24,6 +24,9 @@
     <Filter Include="Header Files\ThirdParty">
       <UniqueIdentifier>{da9bf7ac-b814-4bb3-99e0-6a2248e8f005}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\ThirdParty\Imgui">
+      <UniqueIdentifier>{1d51494a-48e4-4fb8-a295-afabdc089708}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -37,6 +40,27 @@
     </ClCompile>
     <ClCompile Include="Source\ThirdParty\stb_image.cpp">
       <Filter>Header Files\ThirdParty</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_demo.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_draw.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_widgets.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_impl_dx11.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_impl_sdl.cpp">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Wrapper\RenderTarget.hpp">
+      <Filter>Header Files\Wrapper</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -53,9 +77,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\Shader.hpp">
-      <Filter>Header Files\Wrapper</Filter>
-    </ClInclude>
-    <ClInclude Include="Swapchain.hpp">
       <Filter>Header Files\Wrapper</Filter>
     </ClInclude>
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp">
@@ -85,9 +106,6 @@
     <ClInclude Include="Source\Mesh.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp">
-      <Filter>Header Files\Helpers</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Helpers\MipmapGenerator.hpp">
       <Filter>Header Files\Helpers</Filter>
     </ClInclude>
@@ -100,9 +118,6 @@
     <ClInclude Include="Source\Model.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\ObjModelLoader.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\ThirdParty\stb_image.h">
       <Filter>Header Files\ThirdParty</Filter>
     </ClInclude>
@@ -111,6 +126,54 @@
     </ClInclude>
     <ClInclude Include="Source\Helpers\TextureLoader.hpp">
       <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\Swapchain.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\ShaderLoader.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\MeshGenerator.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\TextureCache.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Helpers\ModelLoader.hpp">
+      <Filter>Header Files\Helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imconfig.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imgui.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_internal.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_rectpack.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_textedit.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_truetype.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_impl_dx11.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_impl_sdl.h">
+      <Filter>Header Files\ThirdParty\Imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\UserInterface.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Wrapper\BlendState.hpp">
+      <Filter>Header Files\Wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ForwardShading.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -130,6 +193,15 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Shaders\ForwardShading_VS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent_PS.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent_VS.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

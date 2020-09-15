@@ -46,7 +46,7 @@ namespace h2r
 		return buffer;
 	}
 
-	inline void ReleaseIndexBuffer(IndexBuffer &buffer)
+	inline void CleanupIndexBuffer(IndexBuffer &buffer)
 	{
 		if (buffer.pIndexBuffer != nullptr)
 		{

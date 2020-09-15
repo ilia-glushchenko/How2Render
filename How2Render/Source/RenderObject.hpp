@@ -1,35 +1,57 @@
 #pragma once
 
+#include "Helpers/ModelLoader.hpp"
+#include "Helpers/TextureCache.hpp"
 #include "Math.hpp"
-#include "ObjModelLoader.hpp"
+#include "Wrapper/Context.hpp"
 
 namespace h2r
 {
+	struct Transform
+	{
+		XMVECTOR position = {};
+		XMVECTOR orientation = {};
+		XMVECTOR scale = {1.f, 1.f, 1.f};
+		XMMATRIX world = {};
+	};
 
 	struct RenderObject
 	{
 		DeviceModel model;
-		XMMATRIX world;
+		Transform transform;
 	};
 
-	std::tuple<bool, RenderObject> CreateRenderObject(std::string const &fileName, TextureLoader &loader, float scale)
+	struct RenderObjectStorage
 	{
-		auto [result, objModel] = LoadObjModel(fileName, loader);
-		if (!result)
-		{
-			return {false, RenderObject{}};
-		}
+		std::vector<RenderObject> opaque;
+		std::vector<RenderObject> translucent;
+	};
 
-		RenderObject renderObject;
-		renderObject.model = objModel;
-		renderObject.world = XMMatrixScaling(scale, scale, scale);
+	inline Transform CreateTransform(XMFLOAT3 position, XMFLOAT3 orientation, float scale)
+	{
+		Transform transform;
 
-		return {true, renderObject};
+		transform.position = {position.x, position.y, position.z};
+		transform.orientation = {orientation.x, orientation.y, orientation.z};
+		transform.scale = {scale, scale, scale};
+		transform.world = XMMatrixScaling(scale, scale, scale) * XMMatrixRotationRollPitchYaw(orientation.x, orientation.y, orientation.z) * XMMatrixTranslation(position.x, position.y, position.z);
+
+		return transform;
 	}
 
-	void FreeRenderObject(RenderObject &renderObject)
+	inline RenderObject CreateRenderObject(DeviceModel deviceModel, XMFLOAT3 position, XMFLOAT3 orientation, float scale)
 	{
-		FreeModel(renderObject.model);
+		RenderObject object;
+
+		object.model = deviceModel;
+		object.transform = CreateTransform(position, orientation, scale);
+
+		return object;
+	}
+
+	inline void CleanupRenderObject(RenderObject &renderObject)
+	{
+		CleanupDeviceModel(renderObject.model);
 	}
 
 } // namespace h2r

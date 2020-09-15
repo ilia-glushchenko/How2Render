@@ -62,7 +62,7 @@ namespace h2r
 		return context;
 	}
 
-	void CleanupContext(Context const &context)
+	inline void CleanupContext(Context const &context)
 	{
 		if (context.pd3dDevice != nullptr)
 		{

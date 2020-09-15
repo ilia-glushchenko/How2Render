@@ -9,7 +9,7 @@ namespace h2r
 
 	struct Camera
 	{
-		XMMATRIX model;
+		XMMATRIX world;
 		XMMATRIX view;
 		XMMATRIX proj;
 		XMMATRIX viewProj;
@@ -33,7 +33,7 @@ namespace h2r
 	inline Camera CreateDefaultCamera()
 	{
 		return Camera{
-			XMMatrixIdentity(), //model
+			XMMatrixIdentity(), //world
 			XMMatrixIdentity(), //view
 			XMMatrixIdentity(), //proj
 			XMMatrixIdentity(), //viewProj
@@ -109,7 +109,7 @@ namespace h2r
 		{
 			XMFLOAT2 const windowCenter = {windowSize.x / 2.f, windowSize.y / 2.f};
 			XMFLOAT2 const mouseDelta = {windowCenter.x - events.mouse.x, windowCenter.y - events.mouse.y};
-			SDL_WarpMouseInWindow(window.window, (int)windowCenter.x, (int)windowCenter.y);
+			SDL_WarpMouseInWindow(window.pWindow, (int)windowCenter.x, (int)windowCenter.y);
 
 			camera.pitch -= (mouseDelta.y / windowSize.x) * 0.1f;
 			camera.yaw -= (mouseDelta.x / windowSize.y) * 0.1f;

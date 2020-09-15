@@ -11,8 +11,8 @@ namespace h2r
 
 	struct VertexBuffer
 	{
-		ID3D11Buffer *pVertexBuffer;
-		uint32_t vertexCount;
+		ID3D11Buffer *pVertexBuffer = nullptr;
+		uint32_t vertexCount = 0;
 	};
 
 	template <typename VertexType>
@@ -37,7 +37,7 @@ namespace h2r
 		return buffer;
 	}
 
-	inline void ReleaseVertexBuffer(VertexBuffer &buffer)
+	inline void CleanupVertexBuffer(VertexBuffer &buffer)
 	{
 		if (buffer.pVertexBuffer != nullptr)
 		{

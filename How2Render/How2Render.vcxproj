@@ -101,34 +101,54 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_impl_sdl.cpp" />
+    <ClCompile Include="Source\ThirdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Source\ThirdParty\stb_image.cpp" />
     <ClCompile Include="Source\ThirdParty\tiny_obj_loader.cpp" />
+    <ClCompile Include="Source\Wrapper\RenderTarget.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Application.hpp" />
     <ClInclude Include="Source\Camera.hpp" />
+    <ClInclude Include="Source\ForwardShading.hpp" />
     <ClInclude Include="Source\Helpers\MipmapGenerator.hpp" />
-    <ClInclude Include="Source\Helpers\SphereMeshGenerator.hpp" />
+    <ClInclude Include="Source\Helpers\ModelLoader.hpp" />
+    <ClInclude Include="Source\Helpers\ShaderLoader.hpp" />
+    <ClInclude Include="Source\Helpers\MeshGenerator.hpp" />
+    <ClInclude Include="Source\Helpers\TextureCache.hpp" />
     <ClInclude Include="Source\Helpers\TextureLoader.hpp" />
     <ClInclude Include="Source\Material.hpp" />
     <ClInclude Include="Source\Math.hpp" />
     <ClInclude Include="Source\Input.hpp" />
     <ClInclude Include="Source\Mesh.hpp" />
     <ClInclude Include="Source\Model.hpp" />
-    <ClInclude Include="Source\ObjModelLoader.hpp" />
     <ClInclude Include="Source\Renderer.hpp" />
     <ClInclude Include="Source\RenderObject.hpp" />
+    <ClInclude Include="Source\ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_impl_sdl.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="Source\ThirdParty\imgui\imstb_truetype.h" />
     <ClInclude Include="Source\ThirdParty\stb_image.h" />
     <ClInclude Include="Source\ThirdParty\tiny_obj_loader.h" />
+    <ClInclude Include="Source\UserInterface.hpp" />
     <ClInclude Include="Source\Window.hpp" />
+    <ClInclude Include="Source\Wrapper\BlendState.hpp" />
     <ClInclude Include="Source\Wrapper\IndexBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\ConstantBuffer.hpp" />
     <ClInclude Include="Source\Wrapper\Context.hpp" />
     <ClInclude Include="Source\Wrapper\Sampler.hpp" />
     <ClInclude Include="Source\Wrapper\Shader.hpp" />
+    <ClInclude Include="Source\Wrapper\Swapchain.hpp" />
     <ClInclude Include="Source\Wrapper\Texture.hpp" />
     <ClInclude Include="Source\Wrapper\VertexBuffer.hpp" />
-    <ClInclude Include="Swapchain.hpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ForwardShading.fx">
@@ -164,6 +184,26 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\PathTracer\PathTracer_VS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent.fx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent_PS.hlsl">
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\Translucent_VS.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>

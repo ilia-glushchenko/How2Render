@@ -9,8 +9,8 @@ namespace h2r
 
 	struct Window
 	{
-		SDL_Window *window;
-		SDL_Surface *surface;
+		SDL_Window *pWindow = nullptr;
+		SDL_Surface *pSurface = nullptr;
 	};
 
 	inline Window CreateNewWindow(uint32_t width, uint32_t height)
@@ -23,34 +23,34 @@ namespace h2r
 			return window;
 		}
 
-		window.window = SDL_CreateWindow(
+		window.pWindow = SDL_CreateWindow(
 			"How2Render",
 			SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			width, height,
 			SDL_WINDOW_SHOWN);
-		if (window.window == nullptr)
+		if (window.pWindow == nullptr)
 		{
 			fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
 			return window;
 		}
 
-		window.surface = SDL_GetWindowSurface(window.window);
-		SDL_FillRect(window.surface, nullptr, SDL_MapRGB(window.surface->format, 0xFF, 0xFF, 0xFF));
+		window.pSurface = SDL_GetWindowSurface(window.pWindow);
+		SDL_FillRect(window.pSurface, nullptr, SDL_MapRGB(window.pSurface->format, 0xFF, 0xFF, 0xFF));
 
 		return window;
 	}
 
-	inline void DestroyWindow(Window window)
+	inline void CleanupWindow(Window window)
 	{
 		SDL_Delay(2000);
-		SDL_DestroyWindow(window.window);
+		SDL_DestroyWindow(window.pWindow);
 		SDL_Quit();
 	}
 
 	inline XMINT2 GetWindowSize(Window const &window)
 	{
 		XMINT2 result;
-		SDL_GetWindowSize(window.window, &result.x, &result.y);
+		SDL_GetWindowSize(window.pWindow, &result.x, &result.y);
 		return result;
 	}
 

@@ -1,182 +1,155 @@
 #pragma once
 
+#include "Helpers/ShaderLoader.hpp"
+#include "Wrapper/BlendState.hpp"
 #include "Wrapper/ConstantBuffer.hpp"
 #include "Wrapper/Sampler.hpp"
 #include <d3d11.h>
-#include <d3dcompiler.h>
+#include <filesystem>
 
 namespace h2r
 {
 
-	struct Shaders
+	struct ShadersDescriptor
+	{
+		std::filesystem::path vertexShaderPath;
+		std::filesystem::path pixelShaderPath;
+	};
+
+	struct ShaderProgram
 	{
 		ID3D11VertexShader *pVertexShader = nullptr;
 		ID3D11PixelShader *pPixelShader = nullptr;
 		ID3D11InputLayout *pVertexLayout = nullptr;
-		ID3D11Buffer *pConstantBuffer = nullptr;
-		ID3D11Buffer *pMaterialConstants = nullptr;
-		ID3D11SamplerState *pPointSampler = nullptr;
-		ID3D11SamplerState *pBilinearSampler = nullptr;
-		ID3D11SamplerState *pTrilinearSampler = nullptr;
 	};
 
-	inline HRESULT CompileShaderFromFile(
-		const WCHAR *szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob **ppBlobOut)
+	struct ForwardShaders
 	{
-		HRESULT hr = S_OK;
+		ShaderProgram shadingPass;
+		ShaderProgram translucentPass;
+		DeviceConstBuffers cbuffers;
+		TextureSamplers samplers;
+		BlendStates blendStates;
+	};
 
-		DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-		// Set the D3DCOMPILE_DEBUG flag to embed debug information in the shaders.
-		// Setting this flag improves the shader debugging experience, but still allows
-		// the shaders to be optimized and to run exactly the way they will run in
-		// the release configuration of this program.
-		dwShaderFlags |= D3DCOMPILE_DEBUG;
-
-		// Disable optimizations to further improve shader debugging
-		dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-
-		ID3DBlob *pErrorBlob = nullptr;
-		hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
-								dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
-
-		if (FAILED(hr))
-		{
-			if (pErrorBlob)
-			{
-				OutputDebugStringA(reinterpret_cast<const char *>(pErrorBlob->GetBufferPointer()));
-				pErrorBlob->Release();
-			}
-			return hr;
-		}
-
-		if (pErrorBlob)
-		{
-			pErrorBlob->Release();
-		}
-
-		return S_OK;
+	inline void BindShaders(
+		Context const &context,
+		ShaderProgram const &shaders)
+	{
+		context.pImmediateContext->VSSetShader(shaders.pVertexShader, nullptr, 0);
+		context.pImmediateContext->PSSetShader(shaders.pPixelShader, nullptr, 0);
 	}
 
-	inline Shaders CreateShaders(Context &context)
+	inline ShaderProgram CreateShaderProgram(Context const &context, ShadersDescriptor &desc)
 	{
-		Shaders shaders;
+		ShaderProgram shaders = {};
 
-		// Compile the vertex shader
-		ID3DBlob *pVSBlob = nullptr;
-		auto hr = CompileShaderFromFile(L"Shaders/ForwardShading.fx", "VS", "vs_4_0", &pVSBlob);
-		if (FAILED(hr))
+		// Create vertex shader and set up vertex layout
 		{
-			MessageBox(nullptr,
-					   L"The FX file cannot be compiled. Please run this executable "
-					   L"from the directory that contains the FX file.",
-					   L"Error", MB_OK);
-		}
-
-		// Create the vertex shader
-		hr = context.pd3dDevice->CreateVertexShader(
-			pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &shaders.pVertexShader);
-		if (FAILED(hr))
-		{
-			pVSBlob->Release();
-			printf("Failed to create vertex shader.");
-		}
-
-		// Define the input layout
-		D3D11_INPUT_ELEMENT_DESC layout[] =
+			ID3DBlob *pVSBlob = nullptr;
+			auto hr = CompileShaderFromFile(desc.pixelShaderPath.c_str(), "VS", "vs_4_0", &pVSBlob);
+			if (FAILED(hr))
 			{
-				{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-				{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
-				{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
-			};
-		UINT numElements = ARRAYSIZE(layout);
+				printf("Failed to compile vertex shader from file");
+				assert(SUCCEEDED(hr));
+			}
 
-		// Create the input layout
-		hr = context.pd3dDevice->CreateInputLayout(
-			layout, numElements, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &shaders.pVertexLayout);
-		pVSBlob->Release();
-		if (FAILED(hr))
-		{
-			printf("Failed to create vertex shader input layout.");
+			hr = context.pd3dDevice->CreateVertexShader(
+				pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, &shaders.pVertexShader);
+			if (FAILED(hr))
+			{
+				printf("Failed to create vertex shader");
+				assert(SUCCEEDED(hr));
+			}
+
+			D3D11_INPUT_ELEMENT_DESC const layout[] =
+				{
+					{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+					{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
+					{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0},
+				};
+			hr = context.pd3dDevice->CreateInputLayout(
+				layout, ARRAYSIZE(layout), pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &shaders.pVertexLayout);
+			if (FAILED(hr))
+			{
+				printf("Failed to create input layout");
+				assert(SUCCEEDED(hr));
+			}
+			context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
+
+			pVSBlob->Release();
 		}
 
-		// Set the input layout
-		context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
-
-		// Compile the pixel shader
-		ID3DBlob *pPSBlob = nullptr;
-		hr = CompileShaderFromFile(L"Shaders/ForwardShading.fx", "PS", "ps_4_0", &pPSBlob);
-		if (FAILED(hr))
+		// Create pixel shader
 		{
-			MessageBox(nullptr,
-					   L"The FX file cannot be compiled. Please run this executable "
-					   L"from the directory that contains the FX file.",
-					   L"Error", MB_OK);
+			ID3DBlob *pPSBlob = nullptr;
+			auto hr = CompileShaderFromFile(desc.pixelShaderPath.c_str(), "PS", "ps_4_0", &pPSBlob);
+			if (FAILED(hr))
+			{
+				wprintf(L"Failed to compile pixel shader from file: '%s'", desc.pixelShaderPath.c_str());
+				assert(SUCCEEDED(hr));
+			}
+
+			hr = context.pd3dDevice->CreatePixelShader(
+				pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shaders.pPixelShader);
+			if (FAILED(hr))
+			{
+				printf("Failed to create pixel shader");
+				assert(SUCCEEDED(hr));
+			}
+			pPSBlob->Release();
 		}
-
-		// Create the pixel shader
-		hr = context.pd3dDevice->CreatePixelShader(
-			pPSBlob->GetBufferPointer(),
-			pPSBlob->GetBufferSize(),
-			nullptr,
-			&shaders.pPixelShader);
-		pPSBlob->Release();
-		assert(SUCCEEDED(hr));
-
-		// Create the constant buffer
-		D3D11_BUFFER_DESC bufferDescriptor = {};
-		bufferDescriptor.Usage = D3D11_USAGE_DEFAULT;
-		bufferDescriptor.ByteWidth = sizeof(TransformConstantBuffer);
-		bufferDescriptor.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bufferDescriptor.CPUAccessFlags = 0;
-		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pConstantBuffer);
-		assert(SUCCEEDED(hr));
-
-		bufferDescriptor.ByteWidth = sizeof(MaterialConstantBuffer);
-		hr = context.pd3dDevice->CreateBuffer(&bufferDescriptor, nullptr, &shaders.pMaterialConstants);
-
-		shaders.pPointSampler = CreateSampler(context, eTextureSamplerFilterType::Point);
-		shaders.pBilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Bilinear);
-		shaders.pTrilinearSampler = CreateSampler(context, eTextureSamplerFilterType::Trilinear);
 
 		return shaders;
 	}
 
-	inline void CleanupShaders(Shaders &shaders)
+	inline void CleanupShaders(ShaderProgram &shaders)
 	{
 		if (shaders.pVertexShader != nullptr)
 		{
 			shaders.pVertexShader->Release();
+			shaders.pVertexShader = nullptr;
 		}
 		if (shaders.pPixelShader != nullptr)
 		{
 			shaders.pPixelShader->Release();
-		}
-		if (shaders.pConstantBuffer != nullptr)
-		{
-			shaders.pConstantBuffer->Release();
-		}
-		if (shaders.pMaterialConstants != nullptr)
-		{
-			shaders.pMaterialConstants->Release();
+			shaders.pPixelShader = nullptr;
 		}
 		if (shaders.pVertexLayout != nullptr)
 		{
 			shaders.pVertexLayout->Release();
-		}
-		if (shaders.pPointSampler != nullptr)
-		{
-			shaders.pPointSampler->Release();
-		}
-		if (shaders.pBilinearSampler != nullptr)
-		{
-			shaders.pBilinearSampler->Release();
-		}
-		if (shaders.pTrilinearSampler != nullptr)
-		{
-			shaders.pTrilinearSampler->Release();
+			shaders.pVertexLayout = nullptr;
 		}
 	};
+
+	inline ForwardShaders CreateForwardShaders(Context const &context)
+	{
+		ShadersDescriptor shadingPassDesc;
+		shadingPassDesc.vertexShaderPath = L"Shaders/ForwardShading.fx";
+		shadingPassDesc.pixelShaderPath = L"Shaders/ForwardShading.fx";
+
+		ShadersDescriptor translucencyPassDesc;
+		translucencyPassDesc.vertexShaderPath = L"Shaders/Translucent.fx";
+		translucencyPassDesc.pixelShaderPath = L"Shaders/Translucent.fx";
+
+		ForwardShaders forwardShaders;
+		forwardShaders.shadingPass = CreateShaderProgram(context, shadingPassDesc);
+		forwardShaders.translucentPass = CreateShaderProgram(context, translucencyPassDesc);
+
+		forwardShaders.cbuffers = CreateDeviceConstantBuffers(context);
+		forwardShaders.samplers = CreateTextureSamplers(context);
+		forwardShaders.blendStates = CreateBlendStates(context);
+
+		return forwardShaders;
+	}
+
+	inline void CleanupForwardShaders(ForwardShaders &forwardShaders)
+	{
+		CleanupBlendStates(forwardShaders.blendStates);
+		CleanupTextureSamplers(forwardShaders.samplers);
+
+		CleanupShaders(forwardShaders.shadingPass);
+		CleanupShaders(forwardShaders.translucentPass);
+	}
 
 } // namespace h2r
