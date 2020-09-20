@@ -1,26 +1,27 @@
 #pragma once
 
 #include "Application.hpp"
-#include "Camera.hpp"
-#include "Helpers/MeshGenerator.hpp"
 #include "RenderCommon.hpp"
-#include "Window.hpp"
+#include "RenderObject.hpp"
+#include "Wrapper/Context.hpp"
+#include "Wrapper/RenderTarget.hpp"
 #include "Wrapper/Shader.hpp"
+#include "Wrapper/Texture.hpp"
 
 namespace h2r
 {
 
-	inline void ShadeForward(
+	void GBufferPass(
 		Context const &context,
 		Shaders const &shaders,
 		Application::States const &states,
-		std::vector<RenderObject> const &objects)
+		std::vector<RenderObject> &objects)
 	{
 		// Draw opaque
 		if (states.drawOpaque)
 		{
 			BindBlendState(context, shaders.blendStates.none);
-			BindShaders(context, shaders.forwardShading);
+			BindShaders(context, shaders.gBufferPass);
 			BindConstantBuffers(context, shaders.cbuffers);
 			BindSamplers(context, shaders.samplers);
 
@@ -44,7 +45,7 @@ namespace h2r
 		if (states.drawTransparent)
 		{
 			BindBlendState(context, shaders.blendStates.alphaToCoverage);
-			BindShaders(context, shaders.forwardShading);
+			BindShaders(context, shaders.gBufferPass);
 			BindConstantBuffers(context, shaders.cbuffers);
 			BindSamplers(context, shaders.samplers);
 
@@ -63,6 +64,25 @@ namespace h2r
 				}
 			}
 		}
+	}
+
+	void ShadeDeferred(
+		Context const &context,
+		Shaders const &shaders,
+		Application::States const &states,
+		RenderTargets::GBuffers const &gbuffers)
+	{
+		constexpr uint32_t gbufferCount = sizeof(RenderTargets::GBuffers) / sizeof(DeviceTexture);
+		ID3D11ShaderResourceView *views[gbufferCount] = {
+			gbuffers.positionTexture.shaderResourceView,
+			gbuffers.normalTexture.shaderResourceView,
+			gbuffers.ambientTexture.shaderResourceView,
+			gbuffers.diffuseTexture.shaderResourceView,
+			gbuffers.specularTexture.shaderResourceView,
+			gbuffers.shininessTexture.shaderResourceView,
+		};
+
+		DrawFullScreen(context, shaders.deferredShading, shaders.blendStates.none, shaders.samplers, shaders.cbuffers, gbufferCount, views);
 	}
 
 } // namespace h2r

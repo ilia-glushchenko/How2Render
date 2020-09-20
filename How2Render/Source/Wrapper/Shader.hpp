@@ -23,11 +23,16 @@ namespace h2r
 		ID3D11InputLayout *pVertexLayout = nullptr;
 	};
 
-	struct ForwardShaders
+	struct Shaders
 	{
-		ShaderProgram shadingPass;
+		ShaderProgram forwardShading;
+
+		ShaderProgram gBufferPass;
+		ShaderProgram deferredShading;
+
 		ShaderProgram translucentPass;
 		ShaderProgram gammaCorrection;
+
 		DeviceConstBuffers cbuffers;
 		TextureSamplers samplers;
 		BlendStates blendStates;
@@ -104,7 +109,7 @@ namespace h2r
 		return shaders;
 	}
 
-	inline void CleanupShaders(ShaderProgram &shaders)
+	inline void CleanupShaderProgram(ShaderProgram &shaders)
 	{
 		if (shaders.pVertexShader != nullptr)
 		{
@@ -123,11 +128,19 @@ namespace h2r
 		}
 	};
 
-	inline ForwardShaders CreateForwardShaders(Context const &context)
+	inline Shaders CreateShaders(Context const &context)
 	{
-		ShadersDescriptor shadingPassDesc;
-		shadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
-		shadingPassDesc.pixelShaderPath = "Shaders/ForwardShading.fx";
+		ShadersDescriptor forwardShadingPassDesc;
+		forwardShadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
+		forwardShadingPassDesc.pixelShaderPath = "Shaders/ForwardShading.fx";
+
+		ShadersDescriptor gBufferPassDesc;
+		gBufferPassDesc.vertexShaderPath = "Shaders/DeferredGBufferPass.fx";
+		gBufferPassDesc.pixelShaderPath = "Shaders/DeferredGBufferPass.fx";
+
+		ShadersDescriptor deferredShadingPassDesc;
+		deferredShadingPassDesc.vertexShaderPath = "Shaders/DeferredShading.fx";
+		deferredShadingPassDesc.pixelShaderPath = "Shaders/DeferredShading.fx";
 
 		ShadersDescriptor translucencyPassDesc;
 		translucencyPassDesc.vertexShaderPath = "Shaders/Translucent.fx";
@@ -137,26 +150,30 @@ namespace h2r
 		gammaCorrectionDesc.vertexShaderPath = "Shaders/GammaCorrection.fx";
 		gammaCorrectionDesc.pixelShaderPath = "Shaders/GammaCorrection.fx";
 
-		ForwardShaders forwardShaders;
-		forwardShaders.shadingPass = CreateShaderProgram(context, shadingPassDesc);
-		forwardShaders.translucentPass = CreateShaderProgram(context, translucencyPassDesc);
-		forwardShaders.gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc);
+		Shaders shaders;
+		shaders.forwardShading = CreateShaderProgram(context, forwardShadingPassDesc);
+		shaders.gBufferPass = CreateShaderProgram(context, gBufferPassDesc);
+		shaders.deferredShading = CreateShaderProgram(context, deferredShadingPassDesc);
+		shaders.translucentPass = CreateShaderProgram(context, translucencyPassDesc);
+		shaders.gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc);
 
-		forwardShaders.cbuffers = CreateDeviceConstantBuffers(context);
-		forwardShaders.samplers = CreateTextureSamplers(context);
-		forwardShaders.blendStates = CreateBlendStates(context);
+		shaders.cbuffers = CreateDeviceConstantBuffers(context);
+		shaders.samplers = CreateTextureSamplers(context);
+		shaders.blendStates = CreateBlendStates(context);
 
-		return forwardShaders;
+		return shaders;
 	}
 
-	inline void CleanupForwardShaders(ForwardShaders &forwardShaders)
+	inline void CleanupShaders(Shaders &forwardShaders)
 	{
 		CleanupBlendStates(forwardShaders.blendStates);
 		CleanupTextureSamplers(forwardShaders.samplers);
 
-		CleanupShaders(forwardShaders.shadingPass);
-		CleanupShaders(forwardShaders.translucentPass);
-		CleanupShaders(forwardShaders.gammaCorrection);
+		CleanupShaderProgram(forwardShaders.forwardShading);
+		CleanupShaderProgram(forwardShaders.gBufferPass);
+		CleanupShaderProgram(forwardShaders.deferredShading);
+		CleanupShaderProgram(forwardShaders.translucentPass);
+		CleanupShaderProgram(forwardShaders.gammaCorrection);
 	}
 
 } // namespace h2r

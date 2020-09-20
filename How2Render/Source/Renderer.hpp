@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "Camera.hpp"
+#include "DeferredShading.hpp"
 #include "ForwardShading.hpp"
 #include "Helpers/MeshGenerator.hpp"
 #include "Helpers/TextureCache.hpp"
@@ -9,6 +10,7 @@
 #include "RenderObject.hpp"
 #include "UserInterface.hpp"
 #include "Wrapper/ConstantBuffer.hpp"
+#include "Wrapper/Query.hpp"
 #include "Wrapper/RenderTarget.hpp"
 #include "Wrapper/Texture.hpp"
 #include <directxcolors.h>
@@ -64,7 +66,7 @@ namespace h2r
 
 	inline void DrawTransluent(
 		Context const &context,
-		ForwardShaders const &shaders,
+		Shaders const &shaders,
 		Application::States const &states,
 		std::vector<RenderObject> const &renderObjects)
 	{
@@ -92,36 +94,17 @@ namespace h2r
 		}
 	}
 
-	inline void DrawFullScreen(
-		Context const &context,
-		ForwardShaders const &shaders,
-		Application::States const &states,
-		ID3D11ShaderResourceView *source)
-	{
-		static RenderObject const fullscreenTriangleRO = GenerateFullscreenTriangle(context);
-		static DeviceMesh const &mesh = fullscreenTriangleRO.model.opaqueMeshes.at(0);
-
-		constexpr uint32_t stride = sizeof(Vertex);
-		constexpr uint32_t offset = 0;
-
-		BindBlendState(context, shaders.blendStates.none);
-		BindShaders(context, shaders.gammaCorrection);
-		BindSamplers(context, shaders.samplers);
-		context.pImmediateContext->PSSetShaderResources(0, 1, &source);
-
-		context.pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		context.pImmediateContext->IASetVertexBuffers(0, 1, &mesh.vertexBuffer.pVertexBuffer, &stride, &offset);
-		context.pImmediateContext->IASetIndexBuffer(mesh.indexBuffer.pIndexBuffer, mesh.indexBuffer.indexFormat, offset);
-
-		context.pImmediateContext->DrawIndexed(mesh.indexBuffer.indexCount, 0, 0);
-	}
-
 	inline void DrawUI(
 		Window const &window,
 		Context const &context,
 		Application::States &states,
 		Camera &camera)
 	{
+		static char const *s_shadingTypeNames[static_cast<uint32_t>(Application::eShadingType::Count)] = {
+			"Forward Shading",
+			"Deferred Shading",
+		};
+
 		BeginDrawUI(window);
 
 		if (states.showSideBarWindow)
@@ -132,6 +115,11 @@ namespace h2r
 			ImGui::Checkbox("Draw opaque", &states.drawOpaque);
 			ImGui::Checkbox("Draw transparent", &states.drawTransparent);
 			ImGui::Checkbox("Draw translucent", &states.drawTranslucent);
+			ImGui::Text("Shading GPU time: %0.6f ms", states.shadingGPUTimeMs);
+			ImGui::Combo("Shading Type",
+						 reinterpret_cast<int *>(&states.shadingType),
+						 s_shadingTypeNames,
+						 static_cast<uint32_t>(Application::eShadingType::Count));
 			ImGui::End();
 		}
 
@@ -149,7 +137,7 @@ namespace h2r
 		context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
 
 		// Blit off screen texture to back buffer
-		context.pImmediateContext->CopyResource(presentView.renderTargetTexture, sourceView.renderTargetTexture);
+		context.pImmediateContext->CopyResource(presentView.renderTargetTextures.at(0), sourceView.renderTargetTextures.at(0));
 		swapchain.pSwapChain->Present(0, 0);
 	}
 
@@ -159,36 +147,66 @@ namespace h2r
 		Camera camera = CreateDefaultCamera();
 		InputEvents inputs = CreateDefaultInputEvents();
 		Application app = CreateApplication(window);
+		PerformaceQueries queries = CreatePerformanceQueries(app.context);
+
 		RenderTargets renderTargets = CreateRenderTargets(app.context, window, app.swapchain).value();
+		RenderTargetViews renderTargetViews = CreateRenderTargetViews(renderTargets);
 
 		TextureCache textureCache;
 		RenderObjectStorage storage = LoadRenderObjectStorage(app.context, textureCache);
-		RenderTargetViews renderTargetViews = CreateRenderTargetViews(renderTargets);
 
 		while (!inputs.quit)
 		{
 			UpdateInput(inputs);
 			UpdateCamera(camera, inputs, window);
-			UpdatePerFrameConstantBuffers(app.context, app.forwardShaders.cbuffers, camera);
+			UpdatePerFrameConstantBuffers(app.context, app.shaders.cbuffers, camera);
 
-			BindRenderTargetView(app.context, renderTargetViews.shadingPass);
-			ClearRenderTargetView(app.context, renderTargetViews.shadingPass);
-			ShadeForward(app.context, app.forwardShaders, app.states, storage.opaque);
+			BeginQueryGpuTime(app.context, queries);
+
+			switch (app.states.shadingType)
+			{
+			case Application::eShadingType::Forward:
+				BindRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
+				ClearRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
+				ShadeForward(app.context, app.shaders, app.states, storage.opaque);
+				break;
+			case Application::eShadingType::Deferred:
+				BindRenderTargetView(app.context, renderTargetViews.gBufferPass);
+				ClearRenderTargetView(app.context, renderTargetViews.gBufferPass);
+				GBufferPass(app.context, app.shaders, app.states, storage.opaque);
+
+				BindRenderTargetView(app.context, renderTargetViews.deferredShadingPass);
+				ShadeDeferred(app.context, app.shaders, app.states, renderTargets.gbuffers);
+				break;
+			default:
+				printf("Invalid shading type\n");
+				assert(true);
+				break;
+			}
 
 			BindRenderTargetView(app.context, renderTargetViews.translucencyPass);
 			SortTranslucentRenderObjects(camera, storage.translucent);
-			DrawTransluent(app.context, app.forwardShaders, app.states, storage.translucent);
+			DrawTransluent(app.context, app.shaders, app.states, storage.translucent);
 
 			BindRenderTargetView(app.context, renderTargetViews.gammaCorrection);
 			ClearRenderTargetView(app.context, renderTargetViews.gammaCorrection);
-			DrawFullScreen(app.context, app.forwardShaders, app.states, renderTargetViews.translucencyPass.renderTargetShaderResourceView);
+			DrawFullScreen(app.context,
+						   app.shaders.gammaCorrection,
+						   app.shaders.blendStates.none,
+						   app.shaders.samplers,
+						   app.shaders.cbuffers,
+						   1,
+						   renderTargetViews.translucencyPass.shaderResourceViews.data());
 
+			EndQueryGpuTime(app.context, queries);
+			app.states.shadingGPUTimeMs = BlockAndGetGpuTimeMs(app.context, queries);
 			DrawUI(window, app.context, app.states, camera);
 
 			BindRenderTargetView(app.context, renderTargetViews.presentPass);
 			Present(app.context, app.swapchain, renderTargetViews.gammaCorrection, renderTargetViews.presentPass);
 		}
 
+		CleanupPerformanceQueries(queries);
 		CleanupRenderTargets(renderTargets);
 		CleanupRenderObjectStorage(storage);
 		FlushTextureCache(textureCache);
