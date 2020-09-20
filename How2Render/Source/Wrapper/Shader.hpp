@@ -27,6 +27,7 @@ namespace h2r
 	{
 		ShaderProgram shadingPass;
 		ShaderProgram translucentPass;
+		ShaderProgram gammaCorrection;
 		DeviceConstBuffers cbuffers;
 		TextureSamplers samplers;
 		BlendStates blendStates;
@@ -125,16 +126,21 @@ namespace h2r
 	inline ForwardShaders CreateForwardShaders(Context const &context)
 	{
 		ShadersDescriptor shadingPassDesc;
-		shadingPassDesc.vertexShaderPath = L"Shaders/ForwardShading.fx";
-		shadingPassDesc.pixelShaderPath = L"Shaders/ForwardShading.fx";
+		shadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
+		shadingPassDesc.pixelShaderPath = "Shaders/ForwardShading.fx";
 
 		ShadersDescriptor translucencyPassDesc;
-		translucencyPassDesc.vertexShaderPath = L"Shaders/Translucent.fx";
-		translucencyPassDesc.pixelShaderPath = L"Shaders/Translucent.fx";
+		translucencyPassDesc.vertexShaderPath = "Shaders/Translucent.fx";
+		translucencyPassDesc.pixelShaderPath = "Shaders/Translucent.fx";
+
+		ShadersDescriptor gammaCorrectionDesc;
+		gammaCorrectionDesc.vertexShaderPath = "Shaders/GammaCorrection.fx";
+		gammaCorrectionDesc.pixelShaderPath = "Shaders/GammaCorrection.fx";
 
 		ForwardShaders forwardShaders;
 		forwardShaders.shadingPass = CreateShaderProgram(context, shadingPassDesc);
 		forwardShaders.translucentPass = CreateShaderProgram(context, translucencyPassDesc);
+		forwardShaders.gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc);
 
 		forwardShaders.cbuffers = CreateDeviceConstantBuffers(context);
 		forwardShaders.samplers = CreateTextureSamplers(context);
@@ -150,6 +156,7 @@ namespace h2r
 
 		CleanupShaders(forwardShaders.shadingPass);
 		CleanupShaders(forwardShaders.translucentPass);
+		CleanupShaders(forwardShaders.gammaCorrection);
 	}
 
 } // namespace h2r

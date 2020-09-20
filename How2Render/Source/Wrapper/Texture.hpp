@@ -161,7 +161,7 @@ namespace h2r
 
 		hostTexture.width = width;
 		hostTexture.height = height;
-		hostTexture.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		hostTexture.format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
 		return CreateDeviceTexture(context, hostTexture);
 	}

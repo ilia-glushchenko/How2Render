@@ -56,7 +56,7 @@ namespace h2r
 			sd.BufferCount = 1;
 			sd.BufferDesc.Width = static_cast<uint32_t>(windowSize.x);
 			sd.BufferDesc.Height = static_cast<uint32_t>(windowSize.y);
-			sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+			sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 			sd.BufferDesc.RefreshRate.Numerator = 60;
 			sd.BufferDesc.RefreshRate.Denominator = 1;
 			sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;

@@ -113,4 +113,33 @@ namespace h2r
 		return {sphereBlue, sphereRed, sphereGreen};
 	}
 
+	inline RenderObject GenerateFullscreenTriangle(Context const &context)
+	{
+		HostMesh triangleHostMesh;
+		triangleHostMesh.vertices = {
+			Vertex{
+				XMFLOAT3{-1.0f, 3.0f, 0.5f},
+				XMFLOAT3{0.0f, 0.0f, 1.0f},
+				XMFLOAT2{0.0f, -1.0f},
+			},
+			Vertex{
+				XMFLOAT3{3.0f, -1.0f, 0.5f},
+				XMFLOAT3{0.0f, 0.0f, 1.0f},
+				XMFLOAT2{2.0f, 1.0},
+			},
+			Vertex{
+				XMFLOAT3{-1.0f, -1.0f, 0.5f},
+				XMFLOAT3{0.0f, 0.0f, 1.0f},
+				XMFLOAT2{0.0f, 1.0f},
+			},
+		};
+		triangleHostMesh.indices = {0, 1, 2};
+
+		HostModel triangleHostModel;
+		triangleHostModel.opaqueMeshes = {triangleHostMesh};
+
+		TextureCache cache;
+		return CreateRenderObject(CreateDeviceModel(context, cache, triangleHostModel), {}, {}, 1.f);
+	}
+
 } // namespace h2r

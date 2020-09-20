@@ -92,6 +92,30 @@ namespace h2r
 		}
 	}
 
+	inline void DrawFullScreen(
+		Context const &context,
+		ForwardShaders const &shaders,
+		Application::States const &states,
+		ID3D11ShaderResourceView *source)
+	{
+		static RenderObject const fullscreenTriangleRO = GenerateFullscreenTriangle(context);
+		static DeviceMesh const &mesh = fullscreenTriangleRO.model.opaqueMeshes.at(0);
+
+		constexpr uint32_t stride = sizeof(Vertex);
+		constexpr uint32_t offset = 0;
+
+		BindBlendState(context, shaders.blendStates.none);
+		BindShaders(context, shaders.gammaCorrection);
+		BindSamplers(context, shaders.samplers);
+		context.pImmediateContext->PSSetShaderResources(0, 1, &source);
+
+		context.pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		context.pImmediateContext->IASetVertexBuffers(0, 1, &mesh.vertexBuffer.pVertexBuffer, &stride, &offset);
+		context.pImmediateContext->IASetIndexBuffer(mesh.indexBuffer.pIndexBuffer, mesh.indexBuffer.indexFormat, offset);
+
+		context.pImmediateContext->DrawIndexed(mesh.indexBuffer.indexCount, 0, 0);
+	}
+
 	inline void DrawUI(
 		Window const &window,
 		Context const &context,
@@ -155,10 +179,14 @@ namespace h2r
 			SortTranslucentRenderObjects(camera, storage.translucent);
 			DrawTransluent(app.context, app.forwardShaders, app.states, storage.translucent);
 
+			BindRenderTargetView(app.context, renderTargetViews.gammaCorrection);
+			ClearRenderTargetView(app.context, renderTargetViews.gammaCorrection);
+			DrawFullScreen(app.context, app.forwardShaders, app.states, renderTargetViews.translucencyPass.renderTargetShaderResourceView);
+
 			DrawUI(window, app.context, app.states, camera);
 
 			BindRenderTargetView(app.context, renderTargetViews.presentPass);
-			Present(app.context, app.swapchain, renderTargetViews.translucencyPass, renderTargetViews.presentPass);
+			Present(app.context, app.swapchain, renderTargetViews.gammaCorrection, renderTargetViews.presentPass);
 		}
 
 		CleanupRenderTargets(renderTargets);

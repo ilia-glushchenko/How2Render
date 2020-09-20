@@ -14,6 +14,8 @@ namespace h2r
 	{
 		ID3D11Texture2D *renderTargetTexture = nullptr;
 		ID3D11RenderTargetView *renderTargetView = nullptr;
+		ID3D11ShaderResourceView *renderTargetShaderResourceView = nullptr;
+
 		ID3D11Texture2D *depthStencilTexture = nullptr;
 		ID3D11DepthStencilView *depthStencilView = nullptr;
 	};
@@ -22,6 +24,7 @@ namespace h2r
 	{
 		RenderTargetView shadingPass;
 		RenderTargetView translucencyPass;
+		RenderTargetView gammaCorrection;
 		RenderTargetView presentPass;
 	};
 
@@ -29,22 +32,36 @@ namespace h2r
 	{
 		Swapchain swapchain;
 		DeviceTexture basePass;
+		DeviceTexture gammaCorrection;
 	};
 
 	inline std::optional<RenderTargets> CreateRenderTargets(Context const &context, Window const window, Swapchain swapchain)
 	{
 		auto const windowSize = GetWindowSize(window);
-		auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y);
-		if (!result)
+		RenderTargets renderTargets;
+		renderTargets.swapchain = swapchain;
+
 		{
-			printf("Failed to create lighting pass render target!\n");
-			return std::nullopt;
+			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y);
+			if (!result)
+			{
+				printf("Failed to create shading pass render target!\n");
+				return std::nullopt;
+			}
+
+			renderTargets.basePass = texture;
 		}
 
-		RenderTargets renderTargets;
+		{
+			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y);
+			if (!result)
+			{
+				printf("Failed to create gamma correction render target!\n");
+				return std::nullopt;
+			}
 
-		renderTargets.swapchain = swapchain;
-		renderTargets.basePass = texture;
+			renderTargets.gammaCorrection = texture;
+		}
 
 		return renderTargets;
 	}
@@ -62,16 +79,25 @@ namespace h2r
 		views.shadingPass.depthStencilView = targets.swapchain.depthStencilView;
 		views.shadingPass.renderTargetTexture = targets.basePass.texture;
 		views.shadingPass.renderTargetView = targets.basePass.renderTargetView;
+		views.shadingPass.renderTargetShaderResourceView = targets.basePass.shaderResourceView;
 
 		views.translucencyPass.depthStencilTexture = targets.swapchain.depthStencilTexture;
 		views.translucencyPass.depthStencilView = targets.swapchain.depthStencilView;
 		views.translucencyPass.renderTargetTexture = targets.basePass.texture;
 		views.translucencyPass.renderTargetView = targets.basePass.renderTargetView;
+		views.translucencyPass.renderTargetShaderResourceView = targets.basePass.shaderResourceView;
 
-		views.presentPass.depthStencilTexture = views.shadingPass.depthStencilTexture;
-		views.presentPass.depthStencilView = views.shadingPass.depthStencilView;
+		views.gammaCorrection.depthStencilTexture = nullptr;
+		views.gammaCorrection.depthStencilView = nullptr;
+		views.gammaCorrection.renderTargetTexture = targets.gammaCorrection.texture;
+		views.gammaCorrection.renderTargetView = targets.gammaCorrection.renderTargetView;
+		views.gammaCorrection.renderTargetShaderResourceView = targets.gammaCorrection.shaderResourceView;
+
+		views.presentPass.depthStencilTexture = nullptr;
+		views.presentPass.depthStencilView = nullptr;
 		views.presentPass.renderTargetTexture = targets.swapchain.renderTargetTexture;
 		views.presentPass.renderTargetView = targets.swapchain.renderTargetView;
+		views.presentPass.renderTargetShaderResourceView = nullptr;
 
 		return views;
 	}
