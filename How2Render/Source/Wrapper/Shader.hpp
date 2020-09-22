@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Helpers/ShaderLoader.hpp"
+#include "Input.hpp"
 #include "Wrapper/BlendState.hpp"
 #include "Wrapper/ConstantBuffer.hpp"
 #include "Wrapper/Sampler.hpp"
@@ -38,15 +39,29 @@ namespace h2r
 		BlendStates blendStates;
 	};
 
-	inline void BindShaders(
-		Context const &context,
-		ShaderProgram const &shaders)
+	inline std::optional<Shaders> CreateShaders(Context const &context);
+
+	inline void CleanupShaders(Shaders &forwardShaders);
+
+	inline void BindShaders(Context const &context, ShaderProgram const &shaders);
+
+	inline std::optional<ShaderProgram> CreateShaderProgram(Context const &context, ShadersDescriptor &desc);
+
+	inline void CleanupShaderProgram(ShaderProgram &shaders);
+
+	inline void HotReloadeShaders(Context const& context, InputEvents const& inputs, Shaders& shaders);
+
+} // namespace h2r
+
+namespace h2r
+{
+	inline void BindShaders(Context const &context, ShaderProgram const &shaders)
 	{
 		context.pImmediateContext->VSSetShader(shaders.pVertexShader, nullptr, 0);
 		context.pImmediateContext->PSSetShader(shaders.pPixelShader, nullptr, 0);
 	}
 
-	inline ShaderProgram CreateShaderProgram(Context const &context, ShadersDescriptor &desc)
+	inline std::optional<ShaderProgram> CreateShaderProgram(Context const &context, ShadersDescriptor &desc)
 	{
 		ShaderProgram shaders = {};
 
@@ -57,7 +72,7 @@ namespace h2r
 			if (FAILED(hr))
 			{
 				printf("Failed to compile vertex shader from file");
-				assert(SUCCEEDED(hr));
+				return std::nullopt;
 			}
 
 			hr = context.pd3dDevice->CreateVertexShader(
@@ -65,7 +80,8 @@ namespace h2r
 			if (FAILED(hr))
 			{
 				printf("Failed to create vertex shader");
-				assert(SUCCEEDED(hr));
+				pVSBlob->Release();
+				return std::nullopt;
 			}
 
 			D3D11_INPUT_ELEMENT_DESC const layout[] =
@@ -76,14 +92,15 @@ namespace h2r
 				};
 			hr = context.pd3dDevice->CreateInputLayout(
 				layout, ARRAYSIZE(layout), pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &shaders.pVertexLayout);
+			pVSBlob->Release();
+
 			if (FAILED(hr))
 			{
 				printf("Failed to create input layout");
-				assert(SUCCEEDED(hr));
+				CleanupShaderProgram(shaders);
+				return std::nullopt;
 			}
 			context.pImmediateContext->IASetInputLayout(shaders.pVertexLayout);
-
-			pVSBlob->Release();
 		}
 
 		// Create pixel shader
@@ -93,17 +110,21 @@ namespace h2r
 			if (FAILED(hr))
 			{
 				wprintf(L"Failed to compile pixel shader from file: '%s'", desc.pixelShaderPath.c_str());
-				assert(SUCCEEDED(hr));
+				pPSBlob->Release();
+				CleanupShaderProgram(shaders);
+				return std::nullopt;
 			}
 
 			hr = context.pd3dDevice->CreatePixelShader(
 				pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &shaders.pPixelShader);
+			pPSBlob->Release();
+
 			if (FAILED(hr))
 			{
 				printf("Failed to create pixel shader");
-				assert(SUCCEEDED(hr));
+				CleanupShaderProgram(shaders);
+				return std::nullopt;
 			}
-			pPSBlob->Release();
 		}
 
 		return shaders;
@@ -128,7 +149,7 @@ namespace h2r
 		}
 	};
 
-	inline Shaders CreateShaders(Context const &context)
+	inline std::optional<Shaders> CreateShaders(Context const &context)
 	{
 		ShadersDescriptor forwardShadingPassDesc;
 		forwardShadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
@@ -151,11 +172,51 @@ namespace h2r
 		gammaCorrectionDesc.pixelShaderPath = "Shaders/GammaCorrection.fx";
 
 		Shaders shaders;
-		shaders.forwardShading = CreateShaderProgram(context, forwardShadingPassDesc);
-		shaders.gBufferPass = CreateShaderProgram(context, gBufferPassDesc);
-		shaders.deferredShading = CreateShaderProgram(context, deferredShadingPassDesc);
-		shaders.translucentPass = CreateShaderProgram(context, translucencyPassDesc);
-		shaders.gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc);
+		if (auto forwardShading = CreateShaderProgram(context, forwardShadingPassDesc); forwardShading)
+		{
+			shaders.forwardShading = forwardShading.value();
+		}
+		else
+		{
+			CleanupShaders(shaders);
+			return std::nullopt;
+		}
+		if (auto gBufferPass = CreateShaderProgram(context, gBufferPassDesc); gBufferPass)
+		{
+			shaders.gBufferPass = gBufferPass.value();
+		}
+		else
+		{
+			CleanupShaders(shaders);
+			return std::nullopt;
+		}
+		if (auto deferredShading = CreateShaderProgram(context, deferredShadingPassDesc); deferredShading)
+		{
+			shaders.deferredShading = deferredShading.value();
+		}
+		else
+		{
+			CleanupShaders(shaders);
+			return std::nullopt;
+		}
+		if (auto translucentPass = CreateShaderProgram(context, translucencyPassDesc); translucentPass)
+		{
+			shaders.translucentPass = translucentPass.value();
+		}
+		else
+		{
+			CleanupShaders(shaders);
+			return std::nullopt;
+		}
+		if (auto gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc); gammaCorrection)
+		{
+			shaders.gammaCorrection = gammaCorrection.value();
+		}
+		else
+		{
+			CleanupShaders(shaders);
+			return std::nullopt;
+		}
 
 		shaders.cbuffers = CreateDeviceConstantBuffers(context);
 		shaders.samplers = CreateTextureSamplers(context);
@@ -164,16 +225,33 @@ namespace h2r
 		return shaders;
 	}
 
-	inline void CleanupShaders(Shaders &forwardShaders)
+	inline void CleanupShaders(Shaders &shaders)
 	{
-		CleanupBlendStates(forwardShaders.blendStates);
-		CleanupTextureSamplers(forwardShaders.samplers);
+		CleanupBlendStates(shaders.blendStates);
+		CleanupTextureSamplers(shaders.samplers);
 
-		CleanupShaderProgram(forwardShaders.forwardShading);
-		CleanupShaderProgram(forwardShaders.gBufferPass);
-		CleanupShaderProgram(forwardShaders.deferredShading);
-		CleanupShaderProgram(forwardShaders.translucentPass);
-		CleanupShaderProgram(forwardShaders.gammaCorrection);
+		CleanupShaderProgram(shaders.forwardShading);
+		CleanupShaderProgram(shaders.gBufferPass);
+		CleanupShaderProgram(shaders.deferredShading);
+		CleanupShaderProgram(shaders.translucentPass);
+		CleanupShaderProgram(shaders.gammaCorrection);
+	}
+
+	inline void HotReloadeShaders(Context const& context, InputEvents const& inputs, Shaders& shaders)
+	{
+		if (IsKeyDown(inputs, SDL_SCANCODE_F5))
+		{
+			auto newShaders = CreateShaders(context);
+			if (newShaders)
+			{
+				CleanupShaders(shaders);
+				shaders = newShaders.value();
+			}
+			else
+			{
+				printf("Shader hot reload failed\n");
+			}
+		}
 	}
 
 } // namespace h2r

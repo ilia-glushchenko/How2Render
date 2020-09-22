@@ -34,12 +34,9 @@ namespace h2r
 	{
 		struct GBuffers
 		{
-			DeviceTexture positionTexture;
-			DeviceTexture normalTexture;
 			DeviceTexture ambientTexture;
 			DeviceTexture diffuseTexture;
 			DeviceTexture specularTexture;
-			DeviceTexture shininessTexture;
 		};
 
 		GBuffers gbuffers;
@@ -54,58 +51,31 @@ namespace h2r
 		RenderTargets::GBuffers gbuffers;
 
 		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
+			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
 			if (!result)
 			{
-				printf("Failed to create Position GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.positionTexture = texture;
-		}
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
-			if (!result)
-			{
-				printf("Failed to create NormalTe GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.normalTexture = texture;
-		}
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
-			if (!result)
-			{
-				printf("Failed to create AmbientTe GBuffer device texture\n");
+				printf("Failed to create Ambient GBuffer device texture\n");
 				return std::nullopt;
 			}
 			gbuffers.ambientTexture = texture;
 		}
 		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
+			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
 			if (!result)
 			{
-				printf("Failed to create DiffuseTe GBuffer device texture\n");
+				printf("Failed to create Diffuse GBuffer device texture\n");
 				return std::nullopt;
 			}
 			gbuffers.diffuseTexture = texture;
 		}
 		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
+			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
 			if (!result)
 			{
 				printf("Failed to create Specular GBuffer device texture\n");
 				return std::nullopt;
 			}
 			gbuffers.specularTexture = texture;
-		}
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height);
-			if (!result)
-			{
-				printf("Failed to create Shininess GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.shininessTexture = texture;
 		}
 
 		return gbuffers;
@@ -120,7 +90,7 @@ namespace h2r
 		renderTargets.gbuffers = CreateGBuffers(context, windowSize.x, windowSize.y).value();
 
 		{
-			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y);
+			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
 			if (!result)
 			{
 				printf("Failed to create shading pass render target!\n");
@@ -131,7 +101,7 @@ namespace h2r
 		}
 
 		{
-			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y);
+			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
 			if (!result)
 			{
 				printf("Failed to create gamma correction render target!\n");
@@ -148,12 +118,9 @@ namespace h2r
 	{
 		CleanupDeviceTexture(renderTargets.basePass);
 		CleanupDeviceTexture(renderTargets.gammaCorrection);
-		CleanupDeviceTexture(renderTargets.gbuffers.positionTexture);
-		CleanupDeviceTexture(renderTargets.gbuffers.normalTexture);
 		CleanupDeviceTexture(renderTargets.gbuffers.ambientTexture);
 		CleanupDeviceTexture(renderTargets.gbuffers.diffuseTexture);
 		CleanupDeviceTexture(renderTargets.gbuffers.specularTexture);
-		CleanupDeviceTexture(renderTargets.gbuffers.shininessTexture);
 	}
 
 	inline RenderTargetViews CreateRenderTargetViews(RenderTargets const &targets)
@@ -170,28 +137,19 @@ namespace h2r
 			views.gBufferPass.depthStencilTexture = targets.swapchain.depthStencilTexture;
 			views.gBufferPass.depthStencilView = targets.swapchain.depthStencilView;
 			views.gBufferPass.renderTargetTextures = {
-				targets.gbuffers.positionTexture.texture,
-				targets.gbuffers.normalTexture.texture,
 				targets.gbuffers.ambientTexture.texture,
 				targets.gbuffers.diffuseTexture.texture,
 				targets.gbuffers.specularTexture.texture,
-				targets.gbuffers.shininessTexture.texture,
 			};
 			views.gBufferPass.renderTargetViews = {
-				targets.gbuffers.positionTexture.renderTargetView,
-				targets.gbuffers.normalTexture.renderTargetView,
 				targets.gbuffers.ambientTexture.renderTargetView,
 				targets.gbuffers.diffuseTexture.renderTargetView,
 				targets.gbuffers.specularTexture.renderTargetView,
-				targets.gbuffers.shininessTexture.renderTargetView,
 			};
 			views.gBufferPass.shaderResourceViews = {
-				targets.gbuffers.positionTexture.shaderResourceView,
-				targets.gbuffers.normalTexture.shaderResourceView,
 				targets.gbuffers.ambientTexture.shaderResourceView,
 				targets.gbuffers.diffuseTexture.shaderResourceView,
 				targets.gbuffers.specularTexture.shaderResourceView,
-				targets.gbuffers.shininessTexture.shaderResourceView,
 			};
 		}
 
@@ -222,7 +180,7 @@ namespace h2r
 		return views;
 	}
 
-	inline void BindRenderTargetView(Context const &context, RenderTargetView views)
+	inline void BindRenderTargetView(Context const &context, RenderTargetView const& views)
 	{
 		context.pImmediateContext->OMSetRenderTargets(
 			static_cast<uint32_t>(views.renderTargetTextures.size()),
@@ -230,7 +188,7 @@ namespace h2r
 			views.depthStencilView);
 	}
 
-	inline void ClearRenderTargetView(Context const &context, RenderTargetView views)
+	inline void ClearRenderTargetView(Context const &context, RenderTargetView const& views)
 	{
 		if (!views.renderTargetViews.empty())
 		{

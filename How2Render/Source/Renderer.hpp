@@ -51,6 +51,8 @@ namespace h2r
 		cameraConstants.positionVector = camera.position;
 		cameraConstants.projMatrix = camera.proj;
 		cameraConstants.viewMatrix = camera.view;
+		cameraConstants.invViewMatrix = camera.inverseView;
+		cameraConstants.invProjMatrix = camera.inverseProj;
 
 		context.pImmediateContext->UpdateSubresource(cbuffers.pCameraConstants, 0, nullptr, &cameraConstants, 0, 0);
 	}
@@ -75,7 +77,7 @@ namespace h2r
 			BindBlendState(context, shaders.blendStates.normal);
 			BindShaders(context, shaders.translucentPass);
 			BindConstantBuffers(context, shaders.cbuffers);
-			BindSamplers(context, shaders.samplers);
+			BindSampler(context, shaders.samplers.pPointSampler);
 
 			for (auto const &object : renderObjects)
 			{
@@ -132,10 +134,6 @@ namespace h2r
 		RenderTargetView const &sourceView,
 		RenderTargetView const &presentView)
 	{
-		// Unbind shader recourses and present
-		ID3D11ShaderResourceView *const pSRV[1] = {nullptr};
-		context.pImmediateContext->PSSetShaderResources(0, 1, pSRV);
-
 		// Blit off screen texture to back buffer
 		context.pImmediateContext->CopyResource(presentView.renderTargetTextures.at(0), sourceView.renderTargetTextures.at(0));
 		swapchain.pSwapChain->Present(0, 0);
@@ -158,6 +156,7 @@ namespace h2r
 		while (!inputs.quit)
 		{
 			UpdateInput(inputs);
+			HotReloadeShaders(app.context, inputs, app.shaders);
 			UpdateCamera(camera, inputs, window);
 			UpdatePerFrameConstantBuffers(app.context, app.shaders.cbuffers, camera);
 
@@ -168,15 +167,18 @@ namespace h2r
 			case Application::eShadingType::Forward:
 				BindRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
 				ClearRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
-				ShadeForward(app.context, app.shaders, app.states, storage.opaque);
+				ShadeForwardOpaque(app.context, app.shaders, app.states, storage.opaque);
+				UnbindRenderTargetView(app.context);
 				break;
 			case Application::eShadingType::Deferred:
 				BindRenderTargetView(app.context, renderTargetViews.gBufferPass);
 				ClearRenderTargetView(app.context, renderTargetViews.gBufferPass);
 				GBufferPass(app.context, app.shaders, app.states, storage.opaque);
+				UnbindRenderTargetView(app.context);
 
 				BindRenderTargetView(app.context, renderTargetViews.deferredShadingPass);
-				ShadeDeferred(app.context, app.shaders, app.states, renderTargets.gbuffers);
+				ShadeDeferred(app.context, app.shaders, app.states, renderTargets.gbuffers, app.swapchain);
+				UnbindRenderTargetView(app.context);
 				break;
 			default:
 				printf("Invalid shading type\n");
@@ -184,16 +186,21 @@ namespace h2r
 				break;
 			}
 
+			BindRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
+			ShadeForwardTransparent(app.context, app.shaders, app.states, storage.opaque);
+			UnbindRenderTargetView(app.context);
+
 			BindRenderTargetView(app.context, renderTargetViews.translucencyPass);
 			SortTranslucentRenderObjects(camera, storage.translucent);
 			DrawTransluent(app.context, app.shaders, app.states, storage.translucent);
+			UnbindRenderTargetView(app.context);
 
 			BindRenderTargetView(app.context, renderTargetViews.gammaCorrection);
 			ClearRenderTargetView(app.context, renderTargetViews.gammaCorrection);
 			DrawFullScreen(app.context,
 						   app.shaders.gammaCorrection,
 						   app.shaders.blendStates.none,
-						   app.shaders.samplers,
+						   *app.shaders.samplers.pPointSampler,
 						   app.shaders.cbuffers,
 						   1,
 						   renderTargetViews.translucencyPass.shaderResourceViews.data());
@@ -201,9 +208,11 @@ namespace h2r
 			EndQueryGpuTime(app.context, queries);
 			app.states.shadingGPUTimeMs = BlockAndGetGpuTimeMs(app.context, queries);
 			DrawUI(window, app.context, app.states, camera);
+			UnbindRenderTargetView(app.context);
 
 			BindRenderTargetView(app.context, renderTargetViews.presentPass);
 			Present(app.context, app.swapchain, renderTargetViews.gammaCorrection, renderTargetViews.presentPass);
+			UnbindRenderTargetView(app.context);
 		}
 
 		CleanupPerformanceQueries(queries);

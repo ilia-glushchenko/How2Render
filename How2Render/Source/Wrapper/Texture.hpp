@@ -155,13 +155,16 @@ namespace h2r
 		return {true, result};
 	}
 
-	inline std::tuple<bool, DeviceTexture> CreateDeviceTexture(Context const &context, uint32_t width, uint32_t height)
+	inline std::tuple<bool, DeviceTexture> CreateDeviceTexture(
+		Context const &context,
+		uint32_t width, uint32_t height,
+		DXGI_FORMAT format)
 	{
 		HostTexture hostTexture;
 
 		hostTexture.width = width;
 		hostTexture.height = height;
-		hostTexture.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		hostTexture.format = format;
 
 		return CreateDeviceTexture(context, hostTexture);
 	}

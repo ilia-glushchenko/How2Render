@@ -17,6 +17,7 @@ namespace h2r
 		ID3D11RenderTargetView *renderTargetView = nullptr;
 		ID3D11Texture2D *depthStencilTexture = nullptr;
 		ID3D11DepthStencilView *depthStencilView = nullptr;
+		ID3D11ShaderResourceView* depthStencilShaderResourceView = nullptr;
 	};
 
 	inline Swapchain CreateSwapchain(Window const &window, Context const &context)
@@ -89,19 +90,33 @@ namespace h2r
 			depthDesc.Height = static_cast<uint32_t>(windowSize.y);
 			depthDesc.MipLevels = 1;
 			depthDesc.ArraySize = 1;
-			depthDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			depthDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 			depthDesc.SampleDesc.Count = 1;
 			depthDesc.SampleDesc.Quality = 0;
 			depthDesc.Usage = D3D11_USAGE_DEFAULT;
-			depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+			depthDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 			depthDesc.CPUAccessFlags = 0;
 			depthDesc.MiscFlags = 0;
 
 			auto hr = context.pd3dDevice->CreateTexture2D(&depthDesc, nullptr, &swapchain.depthStencilTexture);
 			assert(SUCCEEDED(hr));
 
+			D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+			dsvDesc.Flags = 0;
+			dsvDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Texture2D.MipSlice = 0;
 			hr = context.pd3dDevice->CreateDepthStencilView(
-				swapchain.depthStencilTexture, nullptr, &swapchain.depthStencilView);
+				swapchain.depthStencilTexture, &dsvDesc, &swapchain.depthStencilView);
+			assert(SUCCEEDED(hr));
+
+			D3D11_SHADER_RESOURCE_VIEW_DESC dsrvDesc;
+			dsrvDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
+			dsrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+			dsrvDesc.Texture2D.MostDetailedMip = 0;
+			dsrvDesc.Texture2D.MipLevels = -1;
+			hr = context.pd3dDevice->CreateShaderResourceView(
+				swapchain.depthStencilTexture, &dsrvDesc, &swapchain.depthStencilShaderResourceView);
 			assert(SUCCEEDED(hr));
 		}
 

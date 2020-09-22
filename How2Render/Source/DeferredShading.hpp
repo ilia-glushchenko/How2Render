@@ -23,35 +23,11 @@ namespace h2r
 			BindBlendState(context, shaders.blendStates.none);
 			BindShaders(context, shaders.gBufferPass);
 			BindConstantBuffers(context, shaders.cbuffers);
-			BindSamplers(context, shaders.samplers);
+			BindSampler(context, shaders.samplers.pTrilinearSampler);
 
 			for (auto const &object : objects)
 			{
 				for (auto const &mesh : object.model.opaqueMeshes)
-				{
-					UpdatePerMeshConstantBuffer(
-						context,
-						shaders.cbuffers,
-						object.model.materials,
-						mesh,
-						object.transform);
-
-					Draw(context, mesh);
-				}
-			}
-		}
-
-		// Draw transparent
-		if (states.drawTransparent)
-		{
-			BindBlendState(context, shaders.blendStates.alphaToCoverage);
-			BindShaders(context, shaders.gBufferPass);
-			BindConstantBuffers(context, shaders.cbuffers);
-			BindSamplers(context, shaders.samplers);
-
-			for (auto const &object : objects)
-			{
-				for (auto const &mesh : object.model.transparentMeshes)
 				{
 					UpdatePerMeshConstantBuffer(
 						context,
@@ -70,19 +46,25 @@ namespace h2r
 		Context const &context,
 		Shaders const &shaders,
 		Application::States const &states,
-		RenderTargets::GBuffers const &gbuffers)
+		RenderTargets::GBuffers const &gbuffers,
+		Swapchain const &swapchain)
 	{
 		constexpr uint32_t gbufferCount = sizeof(RenderTargets::GBuffers) / sizeof(DeviceTexture);
-		ID3D11ShaderResourceView *views[gbufferCount] = {
-			gbuffers.positionTexture.shaderResourceView,
-			gbuffers.normalTexture.shaderResourceView,
+		ID3D11ShaderResourceView *views[gbufferCount + 1] = {
+			swapchain.depthStencilShaderResourceView,
 			gbuffers.ambientTexture.shaderResourceView,
 			gbuffers.diffuseTexture.shaderResourceView,
 			gbuffers.specularTexture.shaderResourceView,
-			gbuffers.shininessTexture.shaderResourceView,
 		};
 
-		DrawFullScreen(context, shaders.deferredShading, shaders.blendStates.none, shaders.samplers, shaders.cbuffers, gbufferCount, views);
+		DrawFullScreen(
+			context,
+			shaders.deferredShading,
+			shaders.blendStates.none,
+			*shaders.samplers.pPointSampler,
+			shaders.cbuffers,
+			gbufferCount + 1,
+			views);
 	}
 
 } // namespace h2r

@@ -11,6 +11,8 @@ namespace h2r
 	{
 		XMMATRIX viewMatrix;
 		XMMATRIX projMatrix;
+		XMMATRIX invViewMatrix;
+		XMMATRIX invProjMatrix;
 		XMVECTOR positionVector;
 	};
 
@@ -27,6 +29,7 @@ namespace h2r
 		float padd1;
 		XMFLOAT3 specular;
 		float shininess;
+
 		float alpha;
 		XMFLOAT3 padd2;
 	};

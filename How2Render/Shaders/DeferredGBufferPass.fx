@@ -54,12 +54,9 @@ struct PS_INPUT
 
 struct PS_OUTPUT
 {
-	float4 Position: SV_Target0;
-	float4 Normal: SV_Target1;
-	float4 Ambient: SV_Target2;
-	float4 Diffuse: SV_Target3;
-	float4 Specular: SV_Target4;
-	float4 Shininess: SV_Target5;
+	float4 Ambient: SV_Target0;
+	float4 Diffuse: SV_Target1;
+	float4 Specular: SV_Target2;
 };
 
 //--------------------------------------------------------------------------------------
@@ -77,8 +74,29 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 //--------------------------------------------------------------------------------------
+// Survey of Efficient Representations for Independent Unit Vectors
+// http://jcgt.org/published/0003/02/01/
+//--------------------------------------------------------------------------------------
+
+// Returns +/- 1
+float2 signNotZero(float2 v)
+{
+	return float2((v.x >= 0.0) ? +1.0 : -1.0, (v.y >= 0.0) ? +1.0 : -1.0);
+}
+
+// Assume normalized input. Output is on [-1, 1] for each component.
+float2 float32x3_to_oct(float3 v)
+{
+	// Project the sphere onto the octahedron, and then onto the xy plane
+	float2 p = v.xy * (1.0 / (abs(v.x) + abs(v.y) + abs(v.z)));
+	// Reflect the folds of the lower hemisphere over the diagonals
+	return (v.z <= 0.0) ? ((1.0 - abs(p.yx)) * signNotZero(p)) : p;
+}
+
+//--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
+
 PS_OUTPUT PS(PS_INPUT input)
 {
 	PS_OUTPUT output = (PS_OUTPUT)0;
@@ -87,14 +105,17 @@ PS_OUTPUT PS(PS_INPUT input)
 	float4 albedo = txAlbedo.Sample(texSampler, input.Tex).rgba;
 	float3 specular = txSpecular.Sample(texSampler, input.Tex).rgb;
 	float3 normal = normalize(input.Normal);
-	normal = (normal + 1.f) * 0.5f;
 
-	output.Position = float4(input.Pos.xyz, albedo.a);
-	output.Normal = float4(normal, albedo.a);
-	output.Ambient = float4(ambient * Ambient, albedo.a);
-	output.Diffuse = float4(albedo * Diffuse, albedo.a);
-	output.Specular = float4(specular * Specular, albedo.a);
-	output.Shininess = float4(Shininess, Shininess, Shininess, albedo.a);
+	// GBuffer Layout
+	//     8        |       8       |       8       |      8
+	// Ambient.R    | Ambient.G     | Ambient.B     | Normal.X  | RGBA8_UNORM
+	// Diffuse.R    | Diffuse.G     | Diffuse.B     | Normal.Y  | RGBA8_UNORM
+	// Specular.R   | Specular.G    | Specular.B    | Shininess | RGBA8_UNORM
+
+	float2 n = float32x3_to_oct(normal.xyz) * 0.5 + 0.5;
+	output.Ambient = float4(ambient * Ambient, n.x);
+	output.Diffuse = float4(albedo.rgb * Diffuse, n.y);
+	output.Specular = float4(specular * Specular, Shininess);
 
 	return output;
 }

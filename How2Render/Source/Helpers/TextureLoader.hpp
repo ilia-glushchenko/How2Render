@@ -14,7 +14,7 @@ namespace h2r
 
 	using TextureLoadFlags = uint32_t;
 	constexpr TextureLoadFlags TEX_LOAD_FLAG_FLIP_VERTICALLY = 1;
-	constexpr TextureLoadFlags TEX_LOAD_FLAG_GEN_MIPMAP = 2;
+	constexpr TextureLoadFlags TEX_LOAD_FLAG_GEN_CPU_MIPMAP = 2;
 
 	inline std::tuple<bool, HostTexture> LoadTextureFromFile(
 		TextureCache &cache,
@@ -51,7 +51,7 @@ namespace h2r
 		desc.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
 		HostTexture hostTexture = CreateHostTexture(desc);
-		if (flags & TEX_LOAD_FLAG_GEN_MIPMAP)
+		if (flags & TEX_LOAD_FLAG_GEN_CPU_MIPMAP)
 		{
 			GenerateMipmap(hostTexture);
 		}

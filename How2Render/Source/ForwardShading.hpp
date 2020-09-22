@@ -10,7 +10,7 @@
 namespace h2r
 {
 
-	inline void ShadeForward(
+	inline void ShadeForwardOpaque(
 		Context const &context,
 		Shaders const &shaders,
 		Application::States const &states,
@@ -22,7 +22,7 @@ namespace h2r
 			BindBlendState(context, shaders.blendStates.none);
 			BindShaders(context, shaders.forwardShading);
 			BindConstantBuffers(context, shaders.cbuffers);
-			BindSamplers(context, shaders.samplers);
+			BindSampler(context, shaders.samplers.pTrilinearSampler);
 
 			for (auto const &object : objects)
 			{
@@ -39,18 +39,25 @@ namespace h2r
 				}
 			}
 		}
+	}
 
+	inline void ShadeForwardTransparent(
+		Context const& context,
+		Shaders const& shaders,
+		Application::States const& states,
+		std::vector<RenderObject> const& objects)
+	{
 		// Draw transparent
 		if (states.drawTransparent)
 		{
 			BindBlendState(context, shaders.blendStates.alphaToCoverage);
 			BindShaders(context, shaders.forwardShading);
 			BindConstantBuffers(context, shaders.cbuffers);
-			BindSamplers(context, shaders.samplers);
+			BindSampler(context, shaders.samplers.pTrilinearSampler);
 
-			for (auto const &object : objects)
+			for (auto const& object : objects)
 			{
-				for (auto const &mesh : object.model.transparentMeshes)
+				for (auto const& mesh : object.model.transparentMeshes)
 				{
 					UpdatePerMeshConstantBuffer(
 						context,

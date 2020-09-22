@@ -24,7 +24,7 @@ namespace h2r
 			bool drawOpaque = true;
 			bool drawTransparent = true;
 			bool drawTranslucent = true;
-			eShadingType shadingType = eShadingType::Forward;
+			eShadingType shadingType = eShadingType::Deferred;
 			double shadingGPUTimeMs = 0;
 		};
 
@@ -40,7 +40,7 @@ namespace h2r
 
 		app.context = CreateContext();
 		app.swapchain = CreateSwapchain(window, app.context);
-		app.shaders = CreateShaders(app.context);
+		app.shaders = CreateShaders(app.context).value();
 		InitUI(window, app.context);
 
 		return app;

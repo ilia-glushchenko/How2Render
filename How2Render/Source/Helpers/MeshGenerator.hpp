@@ -50,7 +50,7 @@ namespace h2r
 
 		{
 			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
-				cache, "Data/Textures/sponza_fabric_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_MIPMAP);
+				cache, "Data/Textures/sponza_fabric_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
 			if (hostLoadResult)
 			{
 				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);
@@ -71,7 +71,7 @@ namespace h2r
 		//Green
 		{
 			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
-				cache, "Data/Textures/sponza_fabric_green_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_MIPMAP);
+				cache, "Data/Textures/sponza_fabric_green_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
 			if (hostLoadResult)
 			{
 				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);
@@ -92,7 +92,7 @@ namespace h2r
 		//Blue
 		{
 			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
-				cache, "Data/Textures/sponza_fabric_blue_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_MIPMAP);
+				cache, "Data/Textures/sponza_fabric_blue_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
 			if (hostLoadResult)
 			{
 				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);

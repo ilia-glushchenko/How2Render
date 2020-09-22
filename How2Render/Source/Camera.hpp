@@ -13,6 +13,8 @@ namespace h2r
 		XMMATRIX view;
 		XMMATRIX proj;
 		XMMATRIX viewProj;
+		XMMATRIX inverseView;
+		XMMATRIX inverseProj;
 
 		XMVECTOR position;
 		XMVECTOR forward;
@@ -37,6 +39,8 @@ namespace h2r
 			XMMatrixIdentity(), //view
 			XMMatrixIdentity(), //proj
 			XMMatrixIdentity(), //viewProj
+			XMMatrixIdentity(), //invView
+			XMMatrixIdentity(), //inveProj
 
 			XMVECTOR{0, 50, 0, 1}, //position
 			XMVECTOR{0, 0, 1},	   //forward
@@ -121,6 +125,9 @@ namespace h2r
 		camera.view = math::CreateViewMatrix(camera.position, camera.yaw, camera.pitch);
 		camera.proj = XMMatrixPerspectiveFovLH(camera.fov, camera.aspectRatio, camera.zNear, camera.zFar);
 		camera.viewProj = camera.view * camera.proj;
+		camera.inverseView = math::CreateCameraMatrix(camera.position, camera.yaw, camera.pitch);
+		XMVECTOR det;
+		camera.inverseProj = XMMatrixInverse(&det, camera.proj);
 
 		return isCameraChanged;
 	}

@@ -72,7 +72,7 @@ namespace h2r
 		Context const &context,
 		ShaderProgram const &shaderProgram,
 		BlendState const &blendState,
-		TextureSamplers const &samplers,
+		ID3D11SamplerState &samplerState,
 		DeviceConstBuffers const &cbuffers,
 		uint32_t sourceCount,
 		ID3D11ShaderResourceView *const *resources)
@@ -85,7 +85,7 @@ namespace h2r
 
 		BindBlendState(context, blendState);
 		BindShaders(context, shaderProgram);
-		BindSamplers(context, samplers);
+		BindSampler(context, &samplerState);
 		BindConstantBuffers(context, cbuffers);
 		context.pImmediateContext->PSSetShaderResources(0, sourceCount, resources);
 
@@ -94,6 +94,9 @@ namespace h2r
 		context.pImmediateContext->IASetIndexBuffer(mesh.indexBuffer.pIndexBuffer, mesh.indexBuffer.indexFormat, offset);
 
 		context.pImmediateContext->DrawIndexed(mesh.indexBuffer.indexCount, 0, 0);
+
+		std::vector<ID3D11ShaderResourceView*> nullSources(sourceCount, nullptr);
+		context.pImmediateContext->PSSetShaderResources(0, sourceCount, nullSources.data());
 	}
 
 } // namespace h2r

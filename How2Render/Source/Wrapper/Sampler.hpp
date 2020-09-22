@@ -20,11 +20,11 @@ namespace h2r
 		Trilinear
 	};
 
-	inline void BindSamplers(
+	inline void BindSampler(
 		Context const &context,
-		TextureSamplers const &samplers)
+		ID3D11SamplerState *sampler)
 	{
-		context.pImmediateContext->PSSetSamplers(0, 1, &samplers.pTrilinearSampler);
+		context.pImmediateContext->PSSetSamplers(0, 1, &sampler);
 	}
 
 	inline ID3D11SamplerState *CreateSampler(Context const &context, eTextureSamplerFilterType filterType)
