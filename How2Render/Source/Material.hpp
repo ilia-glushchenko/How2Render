@@ -42,9 +42,11 @@ namespace h2r
 		eAlphaMask alphaMask = eAlphaMask::Opaque;
 	};
 
-	inline DeviceMaterial CreateDeviceMaterial(Context const &context, TextureCache &cache, HostMaterial const &hostMaterial)
+	inline std::optional<DeviceMaterial> CreateDeviceMaterial(Context const &context, TextureCache &cache, HostMaterial const &hostMaterial)
 	{
 		DeviceMaterial deviceMaterial;
+		DeviceTexture::Descriptor desc;
+		desc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::USE_DX_GENERATED;
 
 		{
 			auto [isTextureCached, cachedTexture] = FindCachedDeviceTexture(cache, hostMaterial.albedoTexture.path);
@@ -52,13 +54,14 @@ namespace h2r
 			{
 				deviceMaterial.albedoTexture = cachedTexture;
 			}
-			else if (hostMaterial.albedoTexture.pixels)
+			else if (!hostMaterial.albedoTexture.pixels.empty())
 			{
-				auto [result, texture] = CreateDeviceTexture(context, hostMaterial.albedoTexture);
-				if (result)
+				desc.hostTexture = hostMaterial.albedoTexture;
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					deviceMaterial.albedoTexture = texture;
-					CacheDeviceTexture(cache, texture);
+					deviceMaterial.albedoTexture = texture.value();
+					CacheDeviceTexture(cache, texture.value());
 				}
 			}
 		}
@@ -69,13 +72,14 @@ namespace h2r
 			{
 				deviceMaterial.ambientTexture = cachedTexture;
 			}
-			else if (hostMaterial.ambientTexture.pixels)
+			else if (!hostMaterial.ambientTexture.pixels.empty())
 			{
-				auto [result, texture] = CreateDeviceTexture(context, hostMaterial.ambientTexture);
-				if (result)
+				desc.hostTexture = hostMaterial.ambientTexture;
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					deviceMaterial.ambientTexture = texture;
-					CacheDeviceTexture(cache, texture);
+					deviceMaterial.ambientTexture = texture.value();
+					CacheDeviceTexture(cache, texture.value());
 				}
 			}
 		}
@@ -86,13 +90,14 @@ namespace h2r
 			{
 				deviceMaterial.specularTexture = cachedTexture;
 			}
-			else if (hostMaterial.specularTexture.pixels)
+			else if (!hostMaterial.specularTexture.pixels.empty())
 			{
-				auto [result, texture] = CreateDeviceTexture(context, hostMaterial.specularTexture);
-				if (result)
+				desc.hostTexture = hostMaterial.specularTexture;
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					deviceMaterial.specularTexture = texture;
-					CacheDeviceTexture(cache, texture);
+					deviceMaterial.specularTexture = texture.value();
+					CacheDeviceTexture(cache, texture.value());
 				}
 			}
 		}

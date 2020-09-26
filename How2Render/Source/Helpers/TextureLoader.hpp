@@ -6,8 +6,8 @@
 #include "Wrapper/Texture.hpp"
 #include <cstdio>
 #include <filesystem>
+#include <optional>
 #include <string>
-#include <tuple>
 
 namespace h2r
 {
@@ -16,20 +16,18 @@ namespace h2r
 	constexpr TextureLoadFlags TEX_LOAD_FLAG_FLIP_VERTICALLY = 1;
 	constexpr TextureLoadFlags TEX_LOAD_FLAG_GEN_CPU_MIPMAP = 2;
 
-	inline std::tuple<bool, HostTexture> LoadTextureFromFile(
-		TextureCache &cache,
-		std::filesystem::path path,
-		TextureLoadFlags flags)
+	inline std::optional<HostTexture> LoadTextureFromFile(
+		TextureCache &cache, std::filesystem::path path, TextureLoadFlags flags)
 	{
 		if (path.empty() || !path.has_filename())
 		{
-			return {false, HostTexture{}};
+			return std::nullopt;
 		}
 
 		auto [cacheFound, cachedTexture] = FindCachedHostTexture(cache, path);
 		if (HasCachedHostTexture(cache, path))
 		{
-			return {true, cachedTexture};
+			return cachedTexture;
 		}
 
 		stbi_set_flip_vertically_on_load(flags & TEX_LOAD_FLAG_FLIP_VERTICALLY);
@@ -39,7 +37,7 @@ namespace h2r
 		if (!pixels)
 		{
 			wprintf(L"Failed to load texture: '%s'\n", path.c_str());
-			return {false, HostTexture{}};
+			return std::nullopt;
 		}
 		wprintf(L"Loaded texture %s\n", path.filename().c_str());
 
@@ -51,6 +49,8 @@ namespace h2r
 		desc.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 
 		HostTexture hostTexture = CreateHostTexture(desc);
+		stbi_image_free(desc.pixels);
+
 		if (flags & TEX_LOAD_FLAG_GEN_CPU_MIPMAP)
 		{
 			GenerateMipmap(hostTexture);
@@ -58,7 +58,7 @@ namespace h2r
 
 		CacheHostTexture(cache, hostTexture);
 
-		return {true, hostTexture};
+		return hostTexture;
 	}
 
 } // namespace h2r

@@ -64,6 +64,11 @@ namespace h2r
 		}
 	}
 
+	inline bool IsKeyPressed(InputEvents const &inputEvents, SDL_Scancode scancode)
+	{
+		return inputEvents.keys[scancode] == eKeyState::Press;
+	}
+
 	inline bool IsKeyDown(InputEvents const &inputEvents, SDL_Scancode scancode)
 	{
 		return inputEvents.keys[scancode] == eKeyState::Press || inputEvents.keys[scancode] == eKeyState::Repeat;

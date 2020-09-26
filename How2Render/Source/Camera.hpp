@@ -35,27 +35,27 @@ namespace h2r
 	inline Camera CreateDefaultCamera()
 	{
 		return Camera{
-			XMMatrixIdentity(), //world
-			XMMatrixIdentity(), //view
-			XMMatrixIdentity(), //proj
-			XMMatrixIdentity(), //viewProj
-			XMMatrixIdentity(), //invView
-			XMMatrixIdentity(), //inveProj
+			.world{XMMatrixIdentity()},
+			.view{XMMatrixIdentity()},
+			.proj{XMMatrixIdentity()},
+			.viewProj{XMMatrixIdentity()},
+			.inverseView{XMMatrixIdentity()},
+			.inverseProj{XMMatrixIdentity()},
 
-			XMVECTOR{0, 50, 0, 1}, //position
-			XMVECTOR{0, 0, 1},	   //forward
-			XMVECTOR{0, 1, 0},	   //up
+			.position{-5.f, 1.5f, 0, 1},
+			.forward{0, 0, 1},
+			.up{0, 1, 0},
 
-			XMConvertToRadians(90.f), //fov
-			1280.f / 720.f,
-			1.f,	//zNear
-			1000.f, //zFar
+			.fov{XMConvertToRadians(90.f)},
+			.aspectRatio{1280.f / 720.f},
+			.zNear{0.1f},
+			.zFar{30.f},
 
-			XMConvertToRadians(90.f), //yaw
-			0,						  //pitch
+			.yaw{XMConvertToRadians(90.f)},
+			.pitch{0},
 
-			0.05f, //speed
-			false  //capture mouse
+			.speed{0.005f},
+			.isMouseCaptured{false},
 		};
 	}
 

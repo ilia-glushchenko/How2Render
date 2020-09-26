@@ -11,26 +11,28 @@ SamplerState texSampler : register(s0);
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer CameraCB : register(b0)
-{
-	matrix View;
-	matrix Proj;
-	float4 CameraPos;
-}
-
-cbuffer TransformCB : register(b1)
+cbuffer PerInstanceCB : register(b0)
 {
 	matrix World;
-}
+};
 
-cbuffer MaterialConstants : register(b2)
+cbuffer PerMaterialCB : register(b1)
 {
 	float3 Ambient;
 	float3 Diffuse;
 	float3 Specular;
 	float Shininess;
 	float Alpha;
-}
+};
+
+cbuffer PerFrameCB : register(b2)
+{
+	matrix View;
+	matrix Proj;
+	matrix inverseView;
+	matrix inverseProj;
+	float4 CameraPos;
+};
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT

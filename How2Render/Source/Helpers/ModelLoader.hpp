@@ -125,23 +125,23 @@ namespace h2r
 	{
 		HostMaterial material;
 
-		auto [loadAmbient, ambientTexture] = LoadTextureFromFile(
+		auto ambientTexture = LoadTextureFromFile(
 			cache, modelDir / mat.ambient_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-		if (loadAmbient)
+		if (ambientTexture)
 		{
-			material.ambientTexture = ambientTexture;
+			material.ambientTexture = ambientTexture.value();
 		}
-		auto [loadAlbedo, albedoTexture] = LoadTextureFromFile(
+		auto albedoTexture = LoadTextureFromFile(
 			cache, modelDir / mat.diffuse_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-		if (loadAlbedo)
+		if (albedoTexture)
 		{
-			material.albedoTexture = albedoTexture;
+			material.albedoTexture = albedoTexture.value();
 		}
-		auto [loadSpecular, specularTexture] = LoadTextureFromFile(
+		auto specularTexture = LoadTextureFromFile(
 			cache, modelDir / mat.specular_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-		if (loadSpecular)
+		if (specularTexture)
 		{
-			material.specularTexture = specularTexture;
+			material.specularTexture = specularTexture.value();
 		}
 
 		material.scalarAmbient = XMFLOAT3(mat.ambient);

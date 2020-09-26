@@ -6,7 +6,7 @@ namespace h2r
 {
 
 	inline HRESULT CompileShaderFromFile(
-		const WCHAR *szFileName, LPCSTR szEntryPoint, LPCSTR szShaderModel, ID3DBlob **ppBlobOut)
+		const WCHAR *filename, D3D_SHADER_MACRO const* pDefines, LPCSTR entryPoint, LPCSTR shaderModel, ID3DBlob **ppBlobOut)
 	{
 		HRESULT hr = S_OK;
 
@@ -23,7 +23,7 @@ namespace h2r
 #endif
 
 		ID3DBlob *pErrorBlob = nullptr;
-		hr = D3DCompileFromFile(szFileName, nullptr, nullptr, szEntryPoint, szShaderModel,
+		hr = D3DCompileFromFile(filename, pDefines, nullptr, entryPoint, shaderModel,
 								dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
 
 		if (FAILED(hr))

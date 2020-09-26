@@ -57,10 +57,6 @@ namespace h2r
 
 	inline void FlushHostTextureCache(TextureCache &cache)
 	{
-		for (auto &tex : cache.hostTextureMap)
-		{
-			CleanupHostTexture(tex.second);
-		}
 		cache.hostTextureMap.clear();
 	}
 

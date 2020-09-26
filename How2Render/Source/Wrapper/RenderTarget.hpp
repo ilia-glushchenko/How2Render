@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Helpers/TextureGenerator.hpp"
 #include "Swapchain.hpp"
 #include "Wrapper/Context.hpp"
 #include "Wrapper/Texture.hpp"
@@ -10,203 +11,124 @@
 namespace h2r
 {
 
-	struct RenderTargetView
-	{
-		std::vector<ID3D11Texture2D *> renderTargetTextures;
-		std::vector<ID3D11RenderTargetView *> renderTargetViews;
-		std::vector<ID3D11ShaderResourceView *> shaderResourceViews;
+    using RenderPassClearFlags = uint8_t;
+    constexpr RenderPassClearFlags RENDER_PASS_CLEAR_FLAG_NONE = 0;
+    constexpr RenderPassClearFlags RENDER_PASS_CLEAR_FLAG_DEPTH_STENCIL = 1;
+    constexpr RenderPassClearFlags RENDER_PASS_CLEAR_FLAG_RENDER_TARGET = 2;
+    constexpr RenderPassClearFlags RENDER_PASS_CLEAR_FLAG_FLOAT_UAVS = 4;
 
-		ID3D11Texture2D *depthStencilTexture = nullptr;
-		ID3D11DepthStencilView *depthStencilView = nullptr;
-	};
+    inline std::optional<DeviceTexture> CreateRenderTargetTexture(
+        Context const& context,
+        uint32_t width, uint32_t height,
+        DXGI_FORMAT format,
+        uint32_t additionalBindFlags);
 
-	struct RenderTargetViews
-	{
-		RenderTargetView forwardShadingPass;
-		RenderTargetView gBufferPass;
-		RenderTargetView deferredShadingPass;
-		RenderTargetView translucencyPass;
-		RenderTargetView gammaCorrection;
-		RenderTargetView presentPass;
-	};
+    inline void BindRenderTargets(
+        Context const& context,
+        ID3D11RenderTargetView* const* omViews,
+        uint32_t omViewCount,
+        ID3D11DepthStencilView* depthStencilView,
+        ID3D11UnorderedAccessView* const* csViews,
+        uint32_t csViewCount);
 
-	struct RenderTargets
-	{
-		struct GBuffers
-		{
-			DeviceTexture ambientTexture;
-			DeviceTexture diffuseTexture;
-			DeviceTexture specularTexture;
-		};
+    inline void ClearRenderTargets(
+        Context const& context,
+        ID3D11RenderTargetView* const* omViews,
+        uint32_t omViewCount,
+        ID3D11DepthStencilView* depthStencilView,
+        ID3D11UnorderedAccessView* const* csViews,
+        uint32_t csViewCount,
+        RenderPassClearFlags clearFlags,
+        XMVECTORF32 clearColor);
 
-		GBuffers gbuffers;
-		DeviceTexture basePass;
-		DeviceTexture gammaCorrection;
-		Swapchain swapchain;
-	};
+    inline void UnbindRenderTargets(Context const& context, uint32_t csViewCount);
 
-	inline std::optional<RenderTargets::GBuffers> CreateGBuffers(
-		Context const &context, uint32_t width, uint32_t height)
-	{
-		RenderTargets::GBuffers gbuffers;
+} // namespace h2r
 
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
-			if (!result)
-			{
-				printf("Failed to create Ambient GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.ambientTexture = texture;
-		}
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
-			if (!result)
-			{
-				printf("Failed to create Diffuse GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.diffuseTexture = texture;
-		}
-		{
-			auto [result, texture] = CreateDeviceTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
-			if (!result)
-			{
-				printf("Failed to create Specular GBuffer device texture\n");
-				return std::nullopt;
-			}
-			gbuffers.specularTexture = texture;
-		}
+namespace h2r
+{
 
-		return gbuffers;
-	}
+    inline std::optional<DeviceTexture> CreateRenderTargetTexture(
+        Context const &context,
+        uint32_t width, uint32_t height,
+        DXGI_FORMAT format,
+        uint32_t additionalBindFlags)
+    {
+        HostTexture hostTexture;
 
-	inline std::optional<RenderTargets>
-	CreateRenderTargets(Context const &context, Window const window, Swapchain swapchain)
-	{
-		auto const windowSize = GetWindowSize(window);
-		RenderTargets renderTargets;
-		renderTargets.swapchain = swapchain;
-		renderTargets.gbuffers = CreateGBuffers(context, windowSize.x, windowSize.y).value();
+        hostTexture.width = width;
+        hostTexture.height = height;
+        hostTexture.format = format;
 
-		{
-			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
-			if (!result)
-			{
-				printf("Failed to create shading pass render target!\n");
-				return std::nullopt;
-			}
+        DeviceTexture::Descriptor desc;
+        desc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::NONE;
+        desc.hostTexture = hostTexture;
+        desc.bindFlags |= additionalBindFlags;
 
-			renderTargets.basePass = texture;
-		}
+        return CreateDeviceTexture(context, desc);
+    }
 
-		{
-			auto [result, texture] = CreateDeviceTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
-			if (!result)
-			{
-				printf("Failed to create gamma correction render target!\n");
-				return std::nullopt;
-			}
+    inline void BindRenderTargets(
+        Context const& context,
+        ID3D11RenderTargetView* const* omViews,
+        uint32_t omViewCount,
+        ID3D11DepthStencilView* depthStencilView,
+        ID3D11UnorderedAccessView* const* csViews,
+        uint32_t csViewCount)
+    {
+        if (omViewCount > 0)
+        {
+            context.pImmediateContext->OMSetRenderTargets(omViewCount, omViews, depthStencilView);
+        }
+        if (csViewCount > 0)
+        {
+            context.pImmediateContext->CSSetUnorderedAccessViews(0, csViewCount, csViews, nullptr);
+        }
+    }
 
-			renderTargets.gammaCorrection = texture;
-		}
+    inline void ClearRenderTargets(
+        Context const& context,
+        ID3D11RenderTargetView* const* omViews,
+        uint32_t omViewCount,
+        ID3D11DepthStencilView* depthStencilView,
+        ID3D11UnorderedAccessView* const* csViews,
+        uint32_t csViewCount,
+        RenderPassClearFlags clearFlags,
+        XMVECTORF32 clearColor)
+    {
+        if (clearFlags & RENDER_PASS_CLEAR_FLAG_RENDER_TARGET)
+        {
+            for (uint32_t i = 0; i < omViewCount; ++i)
+            {
+                context.pImmediateContext->ClearRenderTargetView(omViews[i], clearColor);
+            }
+        }
+        if (clearFlags & RENDER_PASS_CLEAR_FLAG_DEPTH_STENCIL)
+        {
+            if (depthStencilView)
+            {
+                context.pImmediateContext->ClearDepthStencilView(
+                    depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
+            }
+        }
+        if (clearFlags & RENDER_PASS_CLEAR_FLAG_FLOAT_UAVS)
+        {
+            for (uint32_t i = 0; i < csViewCount; ++i)
+            {
+                context.pImmediateContext->ClearUnorderedAccessViewFloat(csViews[i], clearColor);
+            }
+        }
+    }
 
-		return renderTargets;
-	}
+    inline void UnbindRenderTargets(Context const& context, uint32_t csViewCount)
+    {
+        context.pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
 
-	inline void CleanupRenderTargets(RenderTargets &renderTargets)
-	{
-		CleanupDeviceTexture(renderTargets.basePass);
-		CleanupDeviceTexture(renderTargets.gammaCorrection);
-		CleanupDeviceTexture(renderTargets.gbuffers.ambientTexture);
-		CleanupDeviceTexture(renderTargets.gbuffers.diffuseTexture);
-		CleanupDeviceTexture(renderTargets.gbuffers.specularTexture);
-	}
-
-	inline RenderTargetViews CreateRenderTargetViews(RenderTargets const &targets)
-	{
-		RenderTargetViews views;
-
-		views.forwardShadingPass.depthStencilTexture = targets.swapchain.depthStencilTexture;
-		views.forwardShadingPass.depthStencilView = targets.swapchain.depthStencilView;
-		views.forwardShadingPass.renderTargetTextures = {targets.basePass.texture};
-		views.forwardShadingPass.renderTargetViews = {targets.basePass.renderTargetView};
-		views.forwardShadingPass.shaderResourceViews = {targets.basePass.shaderResourceView};
-
-		{
-			views.gBufferPass.depthStencilTexture = targets.swapchain.depthStencilTexture;
-			views.gBufferPass.depthStencilView = targets.swapchain.depthStencilView;
-			views.gBufferPass.renderTargetTextures = {
-				targets.gbuffers.ambientTexture.texture,
-				targets.gbuffers.diffuseTexture.texture,
-				targets.gbuffers.specularTexture.texture,
-			};
-			views.gBufferPass.renderTargetViews = {
-				targets.gbuffers.ambientTexture.renderTargetView,
-				targets.gbuffers.diffuseTexture.renderTargetView,
-				targets.gbuffers.specularTexture.renderTargetView,
-			};
-			views.gBufferPass.shaderResourceViews = {
-				targets.gbuffers.ambientTexture.shaderResourceView,
-				targets.gbuffers.diffuseTexture.shaderResourceView,
-				targets.gbuffers.specularTexture.shaderResourceView,
-			};
-		}
-
-		views.deferredShadingPass.depthStencilTexture = nullptr;
-		views.deferredShadingPass.depthStencilView = nullptr;
-		views.deferredShadingPass.renderTargetTextures = {targets.basePass.texture};
-		views.deferredShadingPass.renderTargetViews = {targets.basePass.renderTargetView};
-		views.deferredShadingPass.shaderResourceViews = {targets.basePass.shaderResourceView};
-
-		views.translucencyPass.depthStencilTexture = targets.swapchain.depthStencilTexture;
-		views.translucencyPass.depthStencilView = targets.swapchain.depthStencilView;
-		views.translucencyPass.renderTargetTextures = {targets.basePass.texture};
-		views.translucencyPass.renderTargetViews = {targets.basePass.renderTargetView};
-		views.translucencyPass.shaderResourceViews = {targets.basePass.shaderResourceView};
-
-		views.gammaCorrection.depthStencilTexture = nullptr;
-		views.gammaCorrection.depthStencilView = nullptr;
-		views.gammaCorrection.renderTargetTextures = {targets.gammaCorrection.texture};
-		views.gammaCorrection.renderTargetViews = {targets.gammaCorrection.renderTargetView};
-		views.gammaCorrection.shaderResourceViews = {targets.gammaCorrection.shaderResourceView};
-
-		views.presentPass.depthStencilTexture = nullptr;
-		views.presentPass.depthStencilView = nullptr;
-		views.presentPass.renderTargetTextures = {targets.swapchain.renderTargetTexture};
-		views.presentPass.renderTargetViews = {targets.swapchain.renderTargetView};
-		views.presentPass.shaderResourceViews = {nullptr};
-
-		return views;
-	}
-
-	inline void BindRenderTargetView(Context const &context, RenderTargetView const& views)
-	{
-		context.pImmediateContext->OMSetRenderTargets(
-			static_cast<uint32_t>(views.renderTargetTextures.size()),
-			views.renderTargetViews.data(),
-			views.depthStencilView);
-	}
-
-	inline void ClearRenderTargetView(Context const &context, RenderTargetView const& views)
-	{
-		if (!views.renderTargetViews.empty())
-		{
-			for (auto view : views.renderTargetViews)
-			{
-				context.pImmediateContext->ClearRenderTargetView(view, DirectX::Colors::White);
-			}
-		}
-		if (views.depthStencilView)
-		{
-			context.pImmediateContext->ClearDepthStencilView(
-				views.depthStencilView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.f, 0);
-		}
-	}
-
-	inline void UnbindRenderTargetView(Context const &context)
-	{
-		context.pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
-	}
+        if (csViewCount > 0)
+        {
+            std::vector<ID3D11UnorderedAccessView*> nullUAVs(csViewCount, nullptr);
+            context.pImmediateContext->CSSetUnorderedAccessViews(0, csViewCount, nullUAVs.data(), nullptr);
+        }
+    }
 
 } // namespace h2r

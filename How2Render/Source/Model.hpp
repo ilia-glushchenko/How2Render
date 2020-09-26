@@ -34,7 +34,7 @@ namespace h2r
 		}
 		for (auto const &hostMaterail : hostModel.materials)
 		{
-			deviceModel.materials.push_back(CreateDeviceMaterial(context, cache, hostMaterail));
+			deviceModel.materials.push_back(CreateDeviceMaterial(context, cache, hostMaterail).value());
 		}
 
 		return deviceModel;

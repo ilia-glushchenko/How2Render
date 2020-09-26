@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
-#include <d3d11.h>
+#include <d3d11_1.h>
 
 namespace h2r
 {
@@ -13,6 +13,7 @@ namespace h2r
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
 		ID3D11Device *pd3dDevice = nullptr;
 		ID3D11DeviceContext *pImmediateContext = nullptr;
+		ID3DUserDefinedAnnotation *pAnnotation = nullptr;
 	};
 
 	inline Context CreateContext()
@@ -54,6 +55,8 @@ namespace h2r
 
 			if (SUCCEEDED(hr))
 			{
+				context.pImmediateContext->QueryInterface(
+					__uuidof(context.pAnnotation), reinterpret_cast<void **>(&context.pAnnotation));
 				break;
 			}
 		}

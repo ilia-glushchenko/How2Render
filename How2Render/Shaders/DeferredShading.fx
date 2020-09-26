@@ -7,23 +7,25 @@ static const float3 SunDir = float3(-1, 1, 1);
 // Texture Samplers
 //--------------------------------------------------------------------------------------
 Texture2D DepthBufferTexture: register(t0);
-Texture2D AmbientGbufferTexture: register(t1);
-Texture2D DiffuseGbufferTexture: register(t2);
-Texture2D SpecularGbufferTexture: register(t3);
+Texture2D NormalBufferTexture: register(t1);
+Texture2D AmbientGbufferTexture: register(t2);
+Texture2D DiffuseGbufferTexture: register(t3);
+Texture2D SpecularGbufferTexture: register(t4);
+Texture2D AOTexture: register(t5);
 
 SamplerState texSampler : register(s0);
 
 //--------------------------------------------------------------------------------------
 // Constant Buffer Variables
 //--------------------------------------------------------------------------------------
-cbuffer CameraCB : register(b0)
+cbuffer PerFrameCB : register(b2)
 {
 	matrix View;
 	matrix Proj;
 	matrix inverseView;
 	matrix inverseProj;
 	float4 CameraPos;
-}
+};
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -87,25 +89,27 @@ float3 WorldPosFromDepth(float depth, float2 TexCoord)
 
 float4 PS(PS_INPUT input) : SV_Target
 {
-	float depth = DepthBufferTexture.Sample(texSampler, input.Tex).r;
-	float4 AmbientNX = AmbientGbufferTexture.Sample(texSampler, input.Tex);
-	float4 DiffuseNY = DiffuseGbufferTexture.Sample(texSampler, input.Tex);
+	float Depth = DepthBufferTexture.Sample(texSampler, input.Tex).r;
+	float2 NormalXY = NormalBufferTexture.Sample(texSampler, input.Tex).xy;
+	float2 AmbientRG = AmbientGbufferTexture.Sample(texSampler, input.Tex).rg;
+	float4 DiffuseAmbientB = DiffuseGbufferTexture.Sample(texSampler, input.Tex);
 	float4 SpecShininess = SpecularGbufferTexture.Sample(texSampler, input.Tex);
 
-	float3 Kdiff = DiffuseNY.rgb;
-	float3 Kambient = AmbientNX.rgb;
+	float ao = AOTexture.Sample(texSampler, input.Tex).r;
+	float3 Kambient = float3(AmbientRG.rg, DiffuseAmbientB.w);
+	float3 Kdiff = DiffuseAmbientB.rgb;
 	float3 Kspec = SpecShininess.rgb;
 	float Shininess = SpecShininess.a;
 
-	float3 n = normalize(oct_to_float32x3(float2(AmbientNX.w, DiffuseNY.w) * 2.f - 1));
-	float3 v = normalize(CameraPos.xyz - WorldPosFromDepth(depth, input.Tex));
+	float3 n = oct_to_float32x3(NormalXY * 2.f - 1);
+	float3 v = normalize(CameraPos.xyz - WorldPosFromDepth(Depth, input.Tex));
 	float3 l = normalize(SunDir);
 
 	// Phong BRDF
 	float NdL = max(dot(n, l), 0.);
 	float3 r = reflect(-l, n);
 	float RdV = max(dot(r, v), 0.);
-	float3 color = Kambient + Kdiff * NdL + pow(RdV, Shininess) * Kspec;
+	float3 color = (Kambient + Kdiff * NdL) * ao + pow(RdV, Shininess) * Kspec;
 
 	return float4(color, 1);
 }

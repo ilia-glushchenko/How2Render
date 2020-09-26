@@ -47,67 +47,72 @@ namespace h2r
 		RenderObject sphereBlue;
 		RenderObject sphereRed;
 		RenderObject sphereGreen;
+		DeviceTexture::Descriptor desc;
 
 		{
-			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
+			auto hostTexture = LoadTextureFromFile(
 				cache, "Data/Textures/sponza_fabric_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-			if (hostLoadResult)
+			if (hostTexture)
 			{
-				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);
-				if (deviceTextureResult)
+				desc.hostTexture = hostTexture.value();
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					material.albedoTexture = deviceTexture;
+					material.albedoTexture = texture.value();
 				}
 			}
 
 			DeviceModel model;
-			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 12))};
+			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 0.5f, 16))};
 			model.transparentMeshes[0].materialId = 0;
 			model.materials = {material};
 
-			sphereRed = CreateRenderObject(model, {20, 10, 0}, {0, 0, 0}, 1);
+			sphereRed = CreateRenderObject(model, {2, 0.5, -0.3f}, {0, 0, 0}, 1);
 		}
 
 		//Green
 		{
-			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
+			auto hostTexture = LoadTextureFromFile(
 				cache, "Data/Textures/sponza_fabric_green_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-			if (hostLoadResult)
+			if (hostTexture)
 			{
-				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);
-				if (deviceTextureResult)
+
+				desc.hostTexture = hostTexture.value();
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					material.albedoTexture = deviceTexture;
+					material.albedoTexture = texture.value();
 				}
 			}
 
 			DeviceModel model;
-			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 12))};
+			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 0.5f, 16))};
 			model.transparentMeshes[0].materialId = 0;
 			model.materials = {material};
 
-			sphereGreen = CreateRenderObject(model, {0, 10, 0}, {0, 0, 0}, 1);
+			sphereGreen = CreateRenderObject(model, {0, 0.5, -0.3f}, {0, 0, 0}, 1);
 		}
 
 		//Blue
 		{
-			auto [hostLoadResult, hostTexture] = LoadTextureFromFile(
+			auto hostTexture = LoadTextureFromFile(
 				cache, "Data/Textures/sponza_fabric_blue_diff.tga", TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
-			if (hostLoadResult)
+			if (hostTexture)
 			{
-				auto [deviceTextureResult, deviceTexture] = CreateDeviceTexture(context, hostTexture);
-				if (deviceTextureResult)
+				desc.hostTexture = hostTexture.value();
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
 				{
-					material.albedoTexture = deviceTexture;
+					material.albedoTexture = texture.value();
 				}
 			}
 
 			DeviceModel model;
-			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 10.f, 12))};
+			model.transparentMeshes = {CreateDeviceMesh(context, GenerateSphereHostMesh(context, 0.5f, 16))};
 			model.transparentMeshes[0].materialId = 0;
 			model.materials = {material};
 
-			sphereBlue = CreateRenderObject(model, {-20, 10, 0}, {0, 0, 0}, 1);
+			sphereBlue = CreateRenderObject(model, {-2, 0.5f, -0.3f}, {0, 0, 0}, 1);
 		}
 
 		return {sphereBlue, sphereRed, sphereGreen};

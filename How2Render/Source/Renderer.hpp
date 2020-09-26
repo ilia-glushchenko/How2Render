@@ -1,226 +1,265 @@
 #pragma once
 
-#include "Application.hpp"
 #include "Camera.hpp"
-#include "DeferredShading.hpp"
-#include "ForwardShading.hpp"
 #include "Helpers/MeshGenerator.hpp"
-#include "Helpers/TextureCache.hpp"
-#include "Input.hpp"
+#include "RenderCommon.hpp"
 #include "RenderObject.hpp"
-#include "UserInterface.hpp"
-#include "Wrapper/ConstantBuffer.hpp"
+#include "RenderPipeline.hpp"
 #include "Wrapper/Query.hpp"
-#include "Wrapper/RenderTarget.hpp"
-#include "Wrapper/Texture.hpp"
-#include <directxcolors.h>
+#include "Wrapper/Shader.hpp"
 
 namespace h2r
 {
 
-	inline RenderObjectStorage LoadRenderObjectStorage(Context const &context, TextureCache &cache)
-	{
-		HostModel const sponzaHostModel = LoadObjModel("Data\\Models\\sponza\\sponza.obj", cache).value();
-		DeviceModel const sponzaDeviceModel = CreateDeviceModel(context, cache, sponzaHostModel);
-		RenderObject const sponzaRenderObject = CreateRenderObject(sponzaDeviceModel, {0, 0, 0}, {0, 0, 0}, 0.1f);
+    inline RenderObjectStorage LoadRenderObjectStorage(Context const &context, TextureCache &cache)
+    {
+        HostModel const sponzaHostModel = LoadObjModel("Data\\Models\\sponza\\sponza.obj", cache).value();
+        DeviceModel const sponzaDeviceModel = CreateDeviceModel(context, cache, sponzaHostModel);
+        RenderObject const sponzaRenderObject = CreateRenderObject(sponzaDeviceModel, {0, 0, 0}, {0, 0, 0}, 0.01f);
 
-		std::vector<RenderObject> opaqueObjects = {sponzaRenderObject};
-		std::vector<RenderObject> translucentObjects = GenerateSpheres(context, cache);
+        std::vector<RenderObject> opaqueObjects = {sponzaRenderObject};
+        std::vector<RenderObject> translucentObjects = GenerateSpheres(context, cache);
 
-		return RenderObjectStorage{opaqueObjects, translucentObjects};
-	}
+        return RenderObjectStorage{opaqueObjects, translucentObjects};
+    }
 
-	inline void CleanupRenderObjectStorage(RenderObjectStorage &storage)
-	{
-		for (auto &object : storage.opaque)
-		{
-			CleanupRenderObject(object);
-		}
-		for (auto &object : storage.translucent)
-		{
-			CleanupRenderObject(object);
-		}
-	}
+    inline void CleanupRenderObjectStorage(RenderObjectStorage &storage)
+    {
+        for (auto &object : storage.opaque)
+        {
+            CleanupRenderObject(object);
+        }
+        for (auto &object : storage.translucent)
+        {
+            CleanupRenderObject(object);
+        }
+    }
 
-	inline void UpdatePerFrameConstantBuffers(
-		Context const &context,
-		DeviceConstBuffers const &cbuffers,
-		Camera const &camera)
-	{
-		CameraHostConstBuffer cameraConstants;
-		cameraConstants.positionVector = camera.position;
-		cameraConstants.projMatrix = camera.proj;
-		cameraConstants.viewMatrix = camera.view;
-		cameraConstants.invViewMatrix = camera.inverseView;
-		cameraConstants.invProjMatrix = camera.inverseProj;
+    inline void DispatchSSAO(Context const &context, Application::States const &states, Swapchain const &swapchain)
+    {
+        if (states.ssaoEnabled)
+        {
+            context.pImmediateContext->Dispatch(swapchain.width / 32 + 1, swapchain.height / 32 + 1, 1);
+        }
+    }
 
-		context.pImmediateContext->UpdateSubresource(cbuffers.pCameraConstants, 0, nullptr, &cameraConstants, 0, 0);
-	}
+    inline void DispatchSsaoBlur(Context const &context, Application::States const &states, Swapchain const &swapchain)
+    {
+        if (states.ssaoBlurEnabled)
+        {
+            context.pImmediateContext->Dispatch(swapchain.width / 32 + 1, swapchain.height / 32 + 1, 1);
+        }
+    }
 
-	inline void SortTranslucentRenderObjects(Camera const &camera, std::vector<RenderObject> &translucentObjects)
-	{
-		std::sort(translucentObjects.begin(), translucentObjects.end(), [&camera](auto const &a, auto const &b) {
-			auto const aLength = std::abs(XMVector3Length(a.transform.position - camera.position).m128_f32[0]);
-			auto const bLength = std::abs(XMVector3Length(b.transform.position - camera.position).m128_f32[0]);
-			return aLength > bLength;
-		});
-	}
+    inline void SortTranslucentRenderObjects(Camera const &camera, std::vector<RenderObject> &translucentObjects)
+    {
+        std::sort(translucentObjects.begin(), translucentObjects.end(), [&camera](auto const &a, auto const &b) {
+            auto const aLength = std::abs(XMVector3Length(a.transform.position - camera.position).m128_f32[0]);
+            auto const bLength = std::abs(XMVector3Length(b.transform.position - camera.position).m128_f32[0]);
+            return aLength > bLength;
+        });
+    }
 
-	inline void DrawTransluent(
-		Context const &context,
-		Shaders const &shaders,
-		Application::States const &states,
-		std::vector<RenderObject> const &renderObjects)
-	{
-		if (states.drawTranslucent)
-		{
-			BindBlendState(context, shaders.blendStates.normal);
-			BindShaders(context, shaders.translucentPass);
-			BindConstantBuffers(context, shaders.cbuffers);
-			BindSampler(context, shaders.samplers.pPointSampler);
+    inline void DrawUI(
+        Window const &window,
+        Context const &context,
+        DeviceConstBuffers const &cbuffersDevice,
+        HostConstBuffers &cbuffersHost,
+        Application::States &states,
+        Camera &camera)
+    {
+        static char const *s_shadingTypeNames[static_cast<uint32_t>(Application::eShadingType::Count)] = {
+            "Forward Shading",
+            "Deferred Shading",
+        };
 
-			for (auto const &object : renderObjects)
-			{
-				for (auto const &mesh : object.model.transparentMeshes)
-				{
-					UpdatePerMeshConstantBuffer(
-						context,
-						shaders.cbuffers,
-						object.model.materials,
-						mesh,
-						object.transform);
+        static char const *s_outputTypeNames[static_cast<uint32_t>(Application::eFinalOutput::Count)] = {
+            "Final image",
+            "Depth",
+            "Normals",
+            "AO",
+            "GBuffer Ambient",
+            "GBuffer Diffuse",
+            "GBuffer Specular",
+            "GBuffer Shininess"};
 
-					Draw(context, mesh);
-				}
-			}
-		}
-	}
+        BeginDrawUI(window);
 
-	inline void DrawUI(
-		Window const &window,
-		Context const &context,
-		Application::States &states,
-		Camera &camera)
-	{
-		static char const *s_shadingTypeNames[static_cast<uint32_t>(Application::eShadingType::Count)] = {
-			"Forward Shading",
-			"Deferred Shading",
-		};
+        bool isInputChanged = false;
+        if (states.showSideBarWindow)
+        {
+            ImGui::Begin("Settings", &states.showSideBarWindow);
+            ImGui::Text("Camera position");
+            isInputChanged &= ImGui::InputFloat3("Position", camera.position.m128_f32, 2);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            isInputChanged |= ImGui::Checkbox("Draw opaque", &states.drawOpaque);
+            isInputChanged |= ImGui::Checkbox("Draw transparent", &states.drawTransparent);
+            isInputChanged |= ImGui::Checkbox("Draw translucent", &states.drawTranslucent);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            isInputChanged |= ImGui::Checkbox("SSAO", &states.ssaoEnabled);
+            isInputChanged |= ImGui::Checkbox("SSAO blur", &states.ssaoBlurEnabled);
+            isInputChanged |= ImGui::SliderInt("SSAO kernel", &states.ssaoKernelSize, 1, g_ssaoKernelSize);
+            isInputChanged |= ImGui::SliderFloat("SSAO radius", &states.ssaoKernelRadius, 0.1f, 3.f, "%.2f", 1);
+            isInputChanged |= ImGui::InputFloat("SSAO bias", &states.ssaoBias, 1e-5f, 1e-2f, 5);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            isInputChanged |= ImGui::Combo(
+                "Shading Type",
+                reinterpret_cast<int *>(&states.shadingType),
+                s_shadingTypeNames,
+                static_cast<uint32_t>(Application::eShadingType::Count));
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            isInputChanged |= ImGui::Combo(
+                "Output",
+                reinterpret_cast<int *>(&states.finalOutput),
+                s_outputTypeNames,
+                static_cast<uint32_t>(
+                    states.shadingType == Application::eShadingType::Deferred 
+                    ? Application::eFinalOutput::Count
+                    : Application::eFinalOutput::gBufferAmbient
+                )
+            );
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::Text("Shading GPU time: %0.2f ms", states.shadingGPUTimeMs);
+            ImGui::End();
+        }
 
-		BeginDrawUI(window);
+        if (isInputChanged)
+        {
+            UpdateInfrequentConstantBuffers(context, states, cbuffersDevice, cbuffersHost);
+        }
 
-		if (states.showSideBarWindow)
-		{
-			ImGui::Begin("Settings", &states.showSideBarWindow);
-			ImGui::Text("Camera position");
-			ImGui::InputFloat3("Position", camera.position.m128_f32, 2);
-			ImGui::Checkbox("Draw opaque", &states.drawOpaque);
-			ImGui::Checkbox("Draw transparent", &states.drawTransparent);
-			ImGui::Checkbox("Draw translucent", &states.drawTranslucent);
-			ImGui::Text("Shading GPU time: %0.6f ms", states.shadingGPUTimeMs);
-			ImGui::Combo("Shading Type",
-						 reinterpret_cast<int *>(&states.shadingType),
-						 s_shadingTypeNames,
-						 static_cast<uint32_t>(Application::eShadingType::Count));
-			ImGui::End();
-		}
+        EndDrawUI();
+    }
 
-		EndDrawUI();
-	}
+    inline void Present(
+        Context const &context,
+        Swapchain const &swapchain,
+        ID3D11Resource *sourceTexture,
+        ID3D11Resource *presentTexture)
+    {
+        // Blit off screen texture to back buffer
+        context.pImmediateContext->CopyResource(presentTexture, sourceTexture);
+        swapchain.pSwapChain->Present(0, 0);
+    }
 
-	inline void Present(
-		Context const &context,
-		Swapchain const &swapchain,
-		RenderTargetView const &sourceView,
-		RenderTargetView const &presentView)
-	{
-		// Blit off screen texture to back buffer
-		context.pImmediateContext->CopyResource(presentView.renderTargetTextures.at(0), sourceView.renderTargetTextures.at(0));
-		swapchain.pSwapChain->Present(0, 0);
-	}
+    inline void MainLoop()
+    {
+        Window window = CreateNewWindow(1200, 720);
+        Camera camera = CreateDefaultCamera();
+        InputEvents inputs = CreateDefaultInputEvents();
+        Application app = CreateApplication(window);
+        PerformaceQueries queries = CreatePerformanceQueries(app.context);
 
-	inline void MainLoop()
-	{
-		Window window = CreateNewWindow(1200, 720);
-		Camera camera = CreateDefaultCamera();
-		InputEvents inputs = CreateDefaultInputEvents();
-		Application app = CreateApplication(window);
-		PerformaceQueries queries = CreatePerformanceQueries(app.context);
+        Pipeline::Textures pipelineTextures = CreatePipelineTextures(app.context, app.swapchain).value();
+        Pipeline pipeline = CreatePipeline(app, pipelineTextures);
 
-		RenderTargets renderTargets = CreateRenderTargets(app.context, window, app.swapchain).value();
-		RenderTargetViews renderTargetViews = CreateRenderTargetViews(renderTargets);
+        TextureCache textureCache;
+        RenderObjectStorage storage = LoadRenderObjectStorage(app.context, textureCache);
+        UpdateInfrequentConstantBuffers(app.context, app.states, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
 
-		TextureCache textureCache;
-		RenderObjectStorage storage = LoadRenderObjectStorage(app.context, textureCache);
+        while (!inputs.quit)
+        {
+            UpdateInput(inputs);
+            if (HotReloadeShaders(app.context, inputs, app.shaders))
+            {
+                UpdateInfrequentConstantBuffers(app.context, app.states, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+            }
+            UpdateCamera(camera, inputs, window);
+            UpdatePerFrameConstantBuffers(app.context, camera, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
 
-		while (!inputs.quit)
-		{
-			UpdateInput(inputs);
-			HotReloadeShaders(app.context, inputs, app.shaders);
-			UpdateCamera(camera, inputs, window);
-			UpdatePerFrameConstantBuffers(app.context, app.shaders.cbuffers, camera);
+            BeginQueryGpuTime(app.context, queries);
 
-			BeginQueryGpuTime(app.context, queries);
+            // Pre pass
+            {
+                BindRenderPass(app.context, pipeline.depthPrePassOpaque);
+                DrawOpaqueRenderObjects(app.context, app.states, storage.opaque, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+                UnbindRenderPass(app.context, pipeline.depthPrePassOpaque);
 
-			switch (app.states.shadingType)
-			{
-			case Application::eShadingType::Forward:
-				BindRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
-				ClearRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
-				ShadeForwardOpaque(app.context, app.shaders, app.states, storage.opaque);
-				UnbindRenderTargetView(app.context);
-				break;
-			case Application::eShadingType::Deferred:
-				BindRenderTargetView(app.context, renderTargetViews.gBufferPass);
-				ClearRenderTargetView(app.context, renderTargetViews.gBufferPass);
-				GBufferPass(app.context, app.shaders, app.states, storage.opaque);
-				UnbindRenderTargetView(app.context);
+                BindRenderPass(app.context, pipeline.depthPrePassTransparent);
+                DrawTransparentRenderObjects(app.context, app.states, storage.opaque, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+                UnbindRenderPass(app.context, pipeline.depthPrePassTransparent);
+            }
 
-				BindRenderTargetView(app.context, renderTargetViews.deferredShadingPass);
-				ShadeDeferred(app.context, app.shaders, app.states, renderTargets.gbuffers, app.swapchain);
-				UnbindRenderTargetView(app.context);
-				break;
-			default:
-				printf("Invalid shading type\n");
-				assert(true);
-				break;
-			}
+            // SSAO
+            {
+                BindRenderPass(app.context, pipeline.ssao);
+                DispatchSSAO(app.context, app.states, app.swapchain);
+                UnbindRenderPass(app.context, pipeline.ssao);
 
-			BindRenderTargetView(app.context, renderTargetViews.forwardShadingPass);
-			ShadeForwardTransparent(app.context, app.shaders, app.states, storage.opaque);
-			UnbindRenderTargetView(app.context);
+                BindRenderPass(app.context, pipeline.ssaoVerticalBlurPass);
+                DispatchSsaoBlur(app.context, app.states, app.swapchain);
+                UnbindRenderPass(app.context, pipeline.ssaoVerticalBlurPass);
 
-			BindRenderTargetView(app.context, renderTargetViews.translucencyPass);
-			SortTranslucentRenderObjects(camera, storage.translucent);
-			DrawTransluent(app.context, app.shaders, app.states, storage.translucent);
-			UnbindRenderTargetView(app.context);
+                BindRenderPass(app.context, pipeline.ssaoHorizontalBlurPass);
+                DispatchSsaoBlur(app.context, app.states, app.swapchain);
+                UnbindRenderPass(app.context, pipeline.ssaoHorizontalBlurPass);
+            }
 
-			BindRenderTargetView(app.context, renderTargetViews.gammaCorrection);
-			ClearRenderTargetView(app.context, renderTargetViews.gammaCorrection);
-			DrawFullScreen(app.context,
-						   app.shaders.gammaCorrection,
-						   app.shaders.blendStates.none,
-						   *app.shaders.samplers.pPointSampler,
-						   app.shaders.cbuffers,
-						   1,
-						   renderTargetViews.translucencyPass.shaderResourceViews.data());
+            switch (app.states.shadingType)
+            {
+            case Application::eShadingType::Forward:
+                BindRenderPass(app.context, pipeline.forwardShadingOpaque);
+                DrawOpaqueRenderObjects(app.context, app.states, storage.opaque, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+                UnbindRenderPass(app.context, pipeline.forwardShadingOpaque);
+                break;
+            case Application::eShadingType::Deferred:
+                BindRenderPass(app.context, pipeline.deferredGBufferPassOpaque);
+                DrawOpaqueRenderObjects(app.context, app.states, storage.opaque, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+                UnbindRenderPass(app.context, pipeline.deferredGBufferPassOpaque);
 
-			EndQueryGpuTime(app.context, queries);
-			app.states.shadingGPUTimeMs = BlockAndGetGpuTimeMs(app.context, queries);
-			DrawUI(window, app.context, app.states, camera);
-			UnbindRenderTargetView(app.context);
+                BindRenderPass(app.context, pipeline.deferredShadingOpaque);
+                DrawFullScreen(app.context);
+                UnbindRenderPass(app.context, pipeline.deferredShadingOpaque);
+                break;
+            default:
+                printf("Invalid shading type\n");
+                assert(true);
+                break;
+            }
 
-			BindRenderTargetView(app.context, renderTargetViews.presentPass);
-			Present(app.context, app.swapchain, renderTargetViews.gammaCorrection, renderTargetViews.presentPass);
-			UnbindRenderTargetView(app.context);
-		}
+            BindRenderPass(app.context, pipeline.forwardShadingTransparent);
+            DrawTransparentRenderObjects(app.context, app.states, storage.opaque, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+            UnbindRenderPass(app.context, pipeline.forwardShadingTransparent);
 
-		CleanupPerformanceQueries(queries);
-		CleanupRenderTargets(renderTargets);
-		CleanupRenderObjectStorage(storage);
-		FlushTextureCache(textureCache);
-		CleanupApplication(app);
-		CleanupWindow(window);
-	}
+            SortTranslucentRenderObjects(camera, storage.translucent);
+            BindRenderPass(app.context, pipeline.forwardShadingTranclucent);
+            DrawTranslucentRenderObjects(app.context, app.states, storage.translucent, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+            UnbindRenderPass(app.context, pipeline.forwardShadingTranclucent);
+
+            BindRenderPass(app.context, pipeline.gammaCorrection);
+            DrawFullScreen(app.context);
+            UnbindRenderPass(app.context, pipeline.gammaCorrection);
+
+            EndQueryGpuTime(app.context, queries);
+            app.states.shadingGPUTimeMs = BlockAndGetGpuTimeMs(app.context, queries);
+
+            BindRenderPass(app.context, pipeline.debug);
+            DrawFullScreen(app.context);
+            UnbindRenderPass(app.context, pipeline.debug);
+
+            BindRenderPass(app.context, pipeline.ui);
+            DrawUI(window, app.context, app.shaders.cbuffersDevice, app.shaders.cbuffersHost, app.states, camera);
+            UnbindRenderPass(app.context, pipeline.ui);
+
+            Present(app.context, app.swapchain, pipelineTextures.debug.texture, app.swapchain.renderTargetTexture);
+        }
+
+        CleanupPerformanceQueries(queries);
+        CleanupPipelineTextures(pipelineTextures);
+        CleanupRenderObjectStorage(storage);
+        FlushTextureCache(textureCache);
+        CleanupApplication(app);
+        CleanupWindow(window);
+    }
 
 } // namespace h2r

@@ -17,13 +17,17 @@ namespace h2r
 		ID3D11RenderTargetView *renderTargetView = nullptr;
 		ID3D11Texture2D *depthStencilTexture = nullptr;
 		ID3D11DepthStencilView *depthStencilView = nullptr;
-		ID3D11ShaderResourceView* depthStencilShaderResourceView = nullptr;
+		ID3D11ShaderResourceView *depthStencilShaderResourceView = nullptr;
+		uint32_t width = 0;
+		uint32_t height = 0;
 	};
 
 	inline Swapchain CreateSwapchain(Window const &window, Context const &context)
 	{
 		Swapchain swapchain = {};
 		auto const windowSize = GetWindowSize(window);
+		swapchain.width = windowSize.x;
+		swapchain.height = windowSize.y;
 
 		// Create swapchain
 		{

@@ -46,6 +46,11 @@ namespace h2r
 			blendState.pBlendState, blendState.pBlendFactor, blendState.sampleMask);
 	}
 
+	inline void UnbindBlendState(Context const &context)
+	{
+		context.pImmediateContext->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+	}
+
 	inline std::optional<BlendState> CreateBlendState(Context const &context, BlendStateDescriptor desc)
 	{
 		D3D11_RENDER_TARGET_BLEND_DESC rtBlendDesc = {};
