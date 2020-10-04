@@ -43,43 +43,13 @@ namespace h2r
         std::filesystem::path computeShaderPath;
     };
 
-    struct Shaders
-    {
-        ShaderProgram depthPrePassOpaque;
-        ShaderProgram depthPrePassTransparent;
-        ShaderProgram ssaoCompute;
-        ShaderProgram ssaoVerticalBlur;
-        ShaderProgram ssaoHorizontalBlur;
-
-        ShaderProgram forwardShading;
-
-        ShaderProgram gBufferPass;
-        ShaderProgram deferredShading;
-
-        ShaderProgram translucentPass;
-        ShaderProgram gammaCorrection;
-        ShaderProgram debug;
-
-        HostConstBuffers cbuffersHost;
-        DeviceConstBuffers cbuffersDevice;
-        TextureSamplers samplers;
-        BlendStates blendStates;
-        DepthStencilStates depthStencilStates;
-    };
-
-    inline std::optional<Shaders> CreateShaders(Context const &context);
-
-    inline void CleanupShaders(Shaders &shaders);
-
     inline std::optional<ShaderProgram> CreateShaderProgram(Context const &context, ShaderProgramDescriptor const &desc);
 
     inline void CleanupShaderProgram(ShaderProgram &shaders);
 
     inline void BindShaders(Context const &context, ShaderProgram const &shaders);
 
-    inline bool HotReloadeShaders(Context const &context, InputEvents const &inputs, Shaders &shaders);
-
-} // namespace h2r
+ } // namespace h2r
 
 namespace h2r
 {
@@ -205,179 +175,6 @@ namespace h2r
         }
     };
 
-    inline std::optional<Shaders> CreateShaders(Context const &context)
-    {
-        Shaders shaders;
-
-        ShaderProgramDescriptor depthPrePassDescriptor;
-        depthPrePassDescriptor.vertexShaderPath = "Shaders/Depth.fx";
-        depthPrePassDescriptor.pixelShaderPath = "Shaders/Depth.fx";
-        if (auto shader = CreateShaderProgram(context, depthPrePassDescriptor); shader)
-        {
-            shaders.depthPrePassOpaque = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        depthPrePassDescriptor.definitions = {
-            {"ENABLE_TRANSPARENCY", "1"},
-            {nullptr, nullptr},
-        };
-        if (auto shader = CreateShaderProgram(context, depthPrePassDescriptor); shader)
-        {
-            shaders.depthPrePassTransparent = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor ssaoComputeDescriptor;
-        ssaoComputeDescriptor.computeShaderPath = "Shaders/SSAO.fx";
-        ssaoComputeDescriptor.computeShaderEntryPoint = "SSAO";
-        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
-        {
-            shaders.ssaoCompute = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ssaoComputeDescriptor.computeShaderPath = "Shaders/SsaoBlur.fx";
-        ssaoComputeDescriptor.computeShaderEntryPoint = "GaussianBlurVertical";
-        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
-        {
-            shaders.ssaoVerticalBlur = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ssaoComputeDescriptor.computeShaderEntryPoint = "GaussianBlurHorizontal";
-        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
-        {
-            shaders.ssaoHorizontalBlur = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor forwardShadingPassDesc;
-        forwardShadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
-        forwardShadingPassDesc.pixelShaderPath = "Shaders/ForwardShading.fx";
-        if (auto forwardShading = CreateShaderProgram(context, forwardShadingPassDesc); forwardShading)
-        {
-            shaders.forwardShading = forwardShading.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor gBufferPassDesc;
-        gBufferPassDesc.vertexShaderPath = "Shaders/DeferredGBufferPass.fx";
-        gBufferPassDesc.pixelShaderPath = "Shaders/DeferredGBufferPass.fx";
-        if (auto gBufferPass = CreateShaderProgram(context, gBufferPassDesc); gBufferPass)
-        {
-            shaders.gBufferPass = gBufferPass.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor deferredShadingPassDesc;
-        deferredShadingPassDesc.vertexShaderPath = "Shaders/DeferredShading.fx";
-        deferredShadingPassDesc.pixelShaderPath = "Shaders/DeferredShading.fx";
-        if (auto deferredShading = CreateShaderProgram(context, deferredShadingPassDesc); deferredShading)
-        {
-            shaders.deferredShading = deferredShading.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor translucencyPassDesc;
-        translucencyPassDesc.vertexShaderPath = "Shaders/Translucent.fx";
-        translucencyPassDesc.pixelShaderPath = "Shaders/Translucent.fx";
-        if (auto translucentPass = CreateShaderProgram(context, translucencyPassDesc); translucentPass)
-        {
-            shaders.translucentPass = translucentPass.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor gammaCorrectionDesc;
-        gammaCorrectionDesc.vertexShaderPath = "Shaders/GammaCorrection.fx";
-        gammaCorrectionDesc.pixelShaderPath = "Shaders/GammaCorrection.fx";
-        if (auto gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc); gammaCorrection)
-        {
-            shaders.gammaCorrection = gammaCorrection.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        ShaderProgramDescriptor debugDesc;
-        debugDesc.vertexShaderPath = "Shaders/Debug.fx";
-        debugDesc.pixelShaderPath = "Shaders/Debug.fx";
-        if (auto shader = CreateShaderProgram(context, debugDesc); shader)
-        {
-            shaders.debug = shader.value();
-        }
-        else
-        {
-            CleanupShaders(shaders);
-            return std::nullopt;
-        }
-
-        shaders.cbuffersDevice = CreateDeviceConstantBuffers(context);
-        shaders.cbuffersHost = CreateHostConstBuffers();
-        shaders.samplers = CreateTextureSamplers(context);
-        shaders.blendStates = CreateBlendStates(context);
-        shaders.depthStencilStates = CreateDepthStencilStates(context).value();
-
-        return shaders;
-    }
-
-    inline void CleanupShaders(Shaders &shaders)
-    {
-        CleanupDepthStencilStates(shaders.depthStencilStates);
-        CleanupTextureSamplers(shaders.samplers);
-        CleanupBlendStates(shaders.blendStates);
-        CleanupDeviceConstantBuffers(shaders.cbuffersDevice);
-
-        CleanupShaderProgram(shaders.depthPrePassOpaque);
-        CleanupShaderProgram(shaders.ssaoCompute);
-        CleanupShaderProgram(shaders.ssaoVerticalBlur);
-        CleanupShaderProgram(shaders.ssaoHorizontalBlur);
-        CleanupShaderProgram(shaders.forwardShading);
-        CleanupShaderProgram(shaders.gBufferPass);
-        CleanupShaderProgram(shaders.deferredShading);
-        CleanupShaderProgram(shaders.translucentPass);
-        CleanupShaderProgram(shaders.gammaCorrection);
-        CleanupShaderProgram(shaders.debug);
-    }
-
     inline void BindShaders(Context const &context, ShaderProgram const &shaders)
     {
         context.pImmediateContext->VSSetShader(shaders.pVertexShader, nullptr, 0);
@@ -390,24 +187,6 @@ namespace h2r
         context.pImmediateContext->VSSetShader(nullptr, nullptr, 0);
         context.pImmediateContext->PSSetShader(nullptr, nullptr, 0);
         context.pImmediateContext->CSSetShader(nullptr, nullptr, 0);
-    }
-
-    inline bool HotReloadeShaders(Context const &context, InputEvents const &inputs, Shaders &shaders)
-    {
-        if (IsKeyPressed(inputs, SDL_SCANCODE_F5))
-        {
-            if (auto newShaders = CreateShaders(context); newShaders)
-            {
-                CleanupShaders(shaders);
-                shaders = newShaders.value();
-                printf("Shader hot reload succeeded\n");
-                return true;
-            }
-
-            printf("Shader hot reload failed\n");
-        }
-
-        return false;
     }
 
 } // namespace h2r

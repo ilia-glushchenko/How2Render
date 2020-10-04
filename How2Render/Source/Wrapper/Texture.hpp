@@ -21,7 +21,7 @@ namespace h2r
 			uint8_t *pixels = nullptr;
 			uint32_t width = 0;
 			uint32_t height = 0;
-			DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+			DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 		};
 
 		struct MipLevel
@@ -34,7 +34,7 @@ namespace h2r
 		};
 
 		std::filesystem::path path;
-		DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+		DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 		std::vector<uint8_t> pixels;
 		uint32_t width = 0;
 		uint32_t height = 0;
@@ -53,8 +53,13 @@ namespace h2r
 				NONE,
 			};
 
-			BindFlags bindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-			eMipMapFlag mipmapFlag = eMipMapFlag::USE_PRE_GENERATED;
+			BindFlags bindFlags = 0;
+			eMipMapFlag mipmapFlag = eMipMapFlag::NONE;
+			DXGI_FORMAT textureFormat = DXGI_FORMAT_UNKNOWN;
+			DXGI_FORMAT srvFormat = DXGI_FORMAT_UNKNOWN;
+			DXGI_FORMAT rtvFormat = DXGI_FORMAT_UNKNOWN;
+			DXGI_FORMAT uavFormat = DXGI_FORMAT_UNKNOWN;
+			DXGI_FORMAT dsvFormat = DXGI_FORMAT_UNKNOWN;
 			HostTexture hostTexture;
 		};
 
@@ -63,6 +68,9 @@ namespace h2r
 		ID3D11ShaderResourceView *shaderResourceView = nullptr;
 		ID3D11RenderTargetView *renderTargetView = nullptr;
 		ID3D11UnorderedAccessView *unorderedAccessView = nullptr;
+		ID3D11DepthStencilView *depthStencilView = nullptr;
+		uint32_t width = 0;
+		uint32_t height = 0;
 	};
 
 	inline HostTexture CreateHostTexture(HostTexture::Descriptor desc);
@@ -100,14 +108,19 @@ namespace h2r
 
 	inline std::optional<DeviceTexture> CreateDeviceTexture(Context const &context, DeviceTexture::Descriptor desc)
 	{
-		DeviceTexture result{desc.hostTexture.path, nullptr, nullptr};
+		assert(desc.textureFormat);
+
+		DeviceTexture result;
+		result.path = desc.hostTexture.path;
+		result.width = desc.hostTexture.width;
+		result.height = desc.hostTexture.height;
 
 		D3D11_TEXTURE2D_DESC dxTexDesc;
 		dxTexDesc.Width = desc.hostTexture.width;
 		dxTexDesc.Height = desc.hostTexture.height;
 		dxTexDesc.MipLevels = 1;
 		dxTexDesc.ArraySize = 1;
-		dxTexDesc.Format = desc.hostTexture.format;
+		dxTexDesc.Format = desc.textureFormat;
 		dxTexDesc.SampleDesc.Count = 1;
 		dxTexDesc.SampleDesc.Quality = 0;
 		dxTexDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -130,9 +143,9 @@ namespace h2r
 			}
 			break;
 		case DeviceTexture::Descriptor::eMipMapFlag::USE_DX_GENERATED:
+			assert(desc.bindFlags & D3D11_BIND_RENDER_TARGET && desc.bindFlags & D3D11_BIND_SHADER_RESOURCE);
 			dxTexDesc.MipLevels = 0;
 			dxTexDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
-			dxTexDesc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
 			break;
 		case DeviceTexture::Descriptor::eMipMapFlag::NONE:
 			if (!desc.hostTexture.pixels.empty() && !desc.hostTexture.mipChain.empty())
@@ -162,8 +175,10 @@ namespace h2r
 
 		if (desc.bindFlags & D3D11_BIND_SHADER_RESOURCE)
 		{
+			assert(desc.srvFormat);
+
 			D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc = {};
-			SRVDesc.Format = dxTexDesc.Format;
+			SRVDesc.Format = desc.srvFormat;
 			SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
 			SRVDesc.Texture2D.MipLevels = dxTexDesc.MipLevels;
 
@@ -195,8 +210,10 @@ namespace h2r
 
 		if (desc.bindFlags & D3D11_BIND_RENDER_TARGET)
 		{
+			assert(desc.rtvFormat);
+
 			D3D11_RENDER_TARGET_VIEW_DESC RTVDesc = {};
-			RTVDesc.Format = dxTexDesc.Format;
+			RTVDesc.Format = desc.rtvFormat;
 			RTVDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 			RTVDesc.Texture2D.MipSlice = 0;
 			if (FAILED(context.pd3dDevice->CreateRenderTargetView(result.texture, &RTVDesc, &result.renderTargetView)))
@@ -209,9 +226,11 @@ namespace h2r
 
 		if (desc.bindFlags & D3D11_BIND_UNORDERED_ACCESS)
 		{
+			// No assert here since we can handle DXGI_FORMAT_UNKNOWN
+
 			D3D11_UNORDERED_ACCESS_VIEW_DESC descUAV;
 			ZeroMemory(&descUAV, sizeof(descUAV));
-			descUAV.Format = DXGI_FORMAT_UNKNOWN;
+			descUAV.Format = desc.uavFormat;
 			descUAV.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
 			descUAV.Texture2D.MipSlice = 0;
 			if (FAILED(context.pd3dDevice->CreateUnorderedAccessView(result.texture, &descUAV, &result.unorderedAccessView)))
@@ -222,20 +241,54 @@ namespace h2r
 			}
 		}
 
+		if (desc.bindFlags & D3D11_BIND_DEPTH_STENCIL)
+		{
+			assert(desc.dsvFormat);
+
+			D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+			dsvDesc.Format = desc.dsvFormat;
+			dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+			dsvDesc.Flags = 0;
+			dsvDesc.Texture2D.MipSlice = 0;
+
+			hr = context.pd3dDevice->CreateDepthStencilView(result.texture, &dsvDesc, &result.depthStencilView);
+			if (FAILED(hr))
+			{
+				printf("Failed to create depth/stencil view");
+				CleanupDeviceTexture(result);
+				return std::nullopt;
+			}
+		}
+
 		return result;
 	}
 
 	inline void CleanupDeviceTexture(DeviceTexture &texture)
 	{
-		if (texture.texture != nullptr)
-		{
-			texture.texture->Release();
-			texture.texture = nullptr;
-		}
 		if (texture.shaderResourceView != nullptr)
 		{
 			texture.shaderResourceView->Release();
 			texture.shaderResourceView = nullptr;
+		}
+		if (texture.renderTargetView != nullptr)
+		{
+			texture.renderTargetView->Release();
+			texture.renderTargetView = nullptr;
+		}
+		if (texture.unorderedAccessView != nullptr)
+		{
+			texture.unorderedAccessView->Release();
+			texture.unorderedAccessView = nullptr;
+		}
+		if (texture.depthStencilView != nullptr)
+		{
+			texture.depthStencilView->Release();
+			texture.depthStencilView = nullptr;
+		}
+		if (texture.texture != nullptr)
+		{
+			texture.texture->Release();
+			texture.texture = nullptr;
 		}
 	}
 

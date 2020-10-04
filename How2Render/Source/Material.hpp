@@ -8,7 +8,8 @@
 namespace h2r
 {
 
-	constexpr int InvalidMaterialId = -1;
+	constexpr int32_t InvalidMaterialId = -1;
+	constexpr int32_t MaterialTextureCount = 4;
 
 	enum class eAlphaMask : uint8_t
 	{
@@ -48,6 +49,7 @@ namespace h2r
 	{
 		DeviceMaterial deviceMaterial;
 		DeviceTexture::Descriptor desc;
+		desc.bindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 		desc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::USE_DX_GENERATED;
 
 		{
@@ -59,6 +61,7 @@ namespace h2r
 			else if (!hostMaterial.albedoTexture.pixels.empty())
 			{
 				desc.hostTexture = hostMaterial.albedoTexture;
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
@@ -77,6 +80,7 @@ namespace h2r
 			else if (!hostMaterial.ambientTexture.pixels.empty())
 			{
 				desc.hostTexture = hostMaterial.ambientTexture;
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
@@ -95,6 +99,7 @@ namespace h2r
 			else if (!hostMaterial.specularTexture.pixels.empty())
 			{
 				desc.hostTexture = hostMaterial.specularTexture;
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
@@ -113,6 +118,7 @@ namespace h2r
 			else if (!hostMaterial.normalTexture.pixels.empty())
 			{
 				desc.hostTexture = hostMaterial.normalTexture;
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{

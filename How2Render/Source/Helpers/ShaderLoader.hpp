@@ -23,7 +23,7 @@ namespace h2r
 #endif
 
 		ID3DBlob *pErrorBlob = nullptr;
-		hr = D3DCompileFromFile(filename, pDefines, nullptr, entryPoint, shaderModel,
+		hr = D3DCompileFromFile(filename, pDefines, D3D_COMPILE_STANDARD_FILE_INCLUDE, entryPoint, shaderModel,
 								dwShaderFlags, 0, ppBlobOut, &pErrorBlob);
 
 		if (FAILED(hr))

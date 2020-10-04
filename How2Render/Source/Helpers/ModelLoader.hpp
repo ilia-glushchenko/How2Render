@@ -141,8 +141,8 @@ namespace h2r
 		{
 			material.albedoTexture = albedoTexture.value();
 		}
-		auto specularTexture = LoadTextureFromFile(
-			cache, modelDir / mat.specular_texname,
+		auto specularTexture = LoadTextureFromFile(cache, 
+			modelDir / mat.specular_texname,
 			TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP,
 			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		if (specularTexture)

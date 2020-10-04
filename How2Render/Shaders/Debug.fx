@@ -1,27 +1,32 @@
+#include "CBuffers.fx"
+#include "Helpers.fx"
+
+//--------------------------------------------------------------------------------------
+// Constants
+//--------------------------------------------------------------------------------------
+static const uint FinalImage = 0;
+static const uint Depth = 1;
+static const uint Normals = 2;
+static const uint AO = 3;
+static const uint ShadowMap = 4;
+static const uint gBufferAmbient = 5;
+static const uint gBufferDiffuse = 6;
+static const uint gBufferSpecular = 7;
+static const uint gBufferShininess = 8;
+
 //--------------------------------------------------------------------------------------
 // Texture Samplers
 //--------------------------------------------------------------------------------------
 Texture2D gammaCorrectedTexture : register(t0);
 Texture2D depthTexture : register(t1);
 Texture2D aoPassTexture : register(t2);
-Texture2D gBuffersNormalXY : register(t3);
-Texture2D gBuffersAmbientRG : register(t4);
-Texture2D gBuffersDiffuseAmbientB : register(t5);
-Texture2D gBuffersSpecularShininess : register(t6);
+Texture2D shadowMapTexture : register(t3);
+Texture2D gBuffersNormalXY : register(t4);
+Texture2D gBuffersAmbientRG : register(t5);
+Texture2D gBuffersDiffuseAmbientB : register(t6);
+Texture2D gBuffersSpecularShininess : register(t7);
 
 SamplerState textureSampler : register(s0);
-
-//--------------------------------------------------------------------------------------
-// Constant Buffer Variables
-//--------------------------------------------------------------------------------------
-cbuffer InfrequentCB : register(b3)
-{
-	uint FinalOutputIndex;
-	uint SsaoKernelSize;
-	float SsaoKernelRadius;
-	float SsaoBias;
-	float4 SsaoKernel[64];
-};
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -57,21 +62,28 @@ float4 PS(PS_INPUT input) : SV_Target
 {
 	float3 color = float3(0, 0, 0);
 
-	if (FinalOutputIndex == 0)
+	if (Debug.FinalOutputIndex == FinalImage)
 	{
 		color = gammaCorrectedTexture.Sample(textureSampler, input.Tex).rgb;
 	}
-	else if (FinalOutputIndex == 1)
+	else if (Debug.FinalOutputIndex == Depth)
 	{
 		color = pow(abs(depthTexture.Sample(textureSampler, input.Tex).rrr), 100);
 	}
-	else if (FinalOutputIndex == 2)
+	else if (Debug.FinalOutputIndex == Normals)
 	{
 		color = float3(gBuffersNormalXY.Sample(textureSampler, input.Tex).xy, 0);
 	}
-	else if (FinalOutputIndex == 3)
+	else if (Debug.FinalOutputIndex == AO)
 	{
 		color = aoPassTexture.Sample(textureSampler, input.Tex).rrr;
+	}
+	else if (Debug.FinalOutputIndex == ShadowMap)
+	{
+		float depth = depthTexture.Sample(textureSampler, input.Tex).r;
+		float3 p = WorldPosFromDepth(depth, input.Tex, Camera.inverseProj, Camera.inverseView);
+		float4 shadowPos = mul(Lights.ViewProj, float4(p, 1));
+		color = float3(shadowPos.zzz / shadowPos.w);
 	}
 	else
 	{
@@ -84,19 +96,19 @@ float4 PS(PS_INPUT input) : SV_Target
 		float3 Kspec = SpecShininess.rgb;
 		float Shininess = SpecShininess.a;
 
-		if (FinalOutputIndex == 4)
+		if (Debug.FinalOutputIndex == gBufferAmbient)
 		{
 			color = Kambient;
 		}
-		else if (FinalOutputIndex == 5)
+		else if (Debug.FinalOutputIndex == gBufferDiffuse)
 		{
 			color = Kdiff;
 		}
-		else if (FinalOutputIndex == 6)
+		else if (Debug.FinalOutputIndex == gBufferSpecular)
 		{
 			color = Kspec;
 		}
-		else if (FinalOutputIndex == 7)
+		else if (Debug.FinalOutputIndex == gBufferShininess)
 		{
 			color = float3(Shininess, Shininess, Shininess);
 		}

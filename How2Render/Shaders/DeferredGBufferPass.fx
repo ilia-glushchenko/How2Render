@@ -1,43 +1,14 @@
-//--------------------------------------------------------------------------------------
-// Constants
-//--------------------------------------------------------------------------------------
-static const float3 SunDir = float3(-1, 1, 1);
+#include "CBuffers.fx"
+#include "Helpers.fx"
 
 //--------------------------------------------------------------------------------------
 // Texture Samplers
 //--------------------------------------------------------------------------------------
-Texture2D txAmbient : register(t0);
-Texture2D txAlbedo : register(t1);
-Texture2D txSpecular : register(t2);
+Texture2D ambientTexture : register(t0);
+Texture2D albedoTexture : register(t1);
+Texture2D specularTexture : register(t2);
 
-SamplerState texSampler : register(s0);
-
-//--------------------------------------------------------------------------------------
-// Constant Buffer Variables
-//--------------------------------------------------------------------------------------
-
-cbuffer PerInstanceCB : register(b0)
-{
-	matrix World;
-};
-
-cbuffer PerMaterialCB : register(b1)
-{
-	float3 Ambient;
-	float3 Diffuse;
-	float3 Specular;
-	float Shininess;
-	float Alpha;
-};
-
-cbuffer PerFrameCB : register(b2)
-{
-	matrix View;
-	matrix Proj;
-	matrix inverseView;
-	matrix inverseProj;
-	float4 CameraPos;
-};
+SamplerState anisotropicSampler : register(s0);
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -51,7 +22,7 @@ struct PS_INPUT
 {
 	float4 Pos : SV_POSITION;
 	float2 Tex : TEXCOORD0;
-	float3 WorldPos : TEXCOORD1;
+	float3 WorldPos : POSITION0;
 };
 
 struct PS_OUTPUT
@@ -67,10 +38,10 @@ struct PS_OUTPUT
 PS_INPUT VS(VS_INPUT input)
 {
 	PS_INPUT output = (PS_INPUT)0;
-	matrix MVP = mul(mul(Proj, View), World);
+	matrix MVP = mul(mul(Camera.Proj, Camera.View), Transform.World);
 	output.Pos = mul(MVP, float4(input.Pos, 1.f));
 	output.Tex = input.Tex;
-	output.WorldPos = mul(World, float4(input.Pos, 1)).xyz;
+	output.WorldPos = mul(Transform.World, float4(input.Pos, 1)).xyz;
 	return output;
 }
 
@@ -82,9 +53,9 @@ PS_OUTPUT PS(PS_INPUT input)
 {
 	PS_OUTPUT output = (PS_OUTPUT)0;
 
-	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb * Ambient;
-	float4 albedo = txAlbedo.Sample(texSampler, input.Tex).rgba;
-	float3 specular = txSpecular.Sample(texSampler, input.Tex).rgb * Specular;
+	float3 ambient = ambientTexture.Sample(anisotropicSampler, input.Tex).rgb * Material.Ambient;
+	float4 albedo = albedoTexture.Sample(anisotropicSampler, input.Tex).rgba;
+	float3 specular = specularTexture.Sample(anisotropicSampler, input.Tex).rgb * Material.Specular;
 
 	// GBuffer Layout
 	//     8        |       8       |       8       |      8
@@ -93,8 +64,8 @@ PS_OUTPUT PS(PS_INPUT input)
 	// Specular.R   | Specular.G    | Specular.B    | Shininess | RGBA8_UNORM
 
 	output.Ambient = ambient.rg;
-	output.Diffuse = float4(albedo.rgb * Diffuse, ambient.b);
-	output.Specular = float4(specular, Shininess);
+	output.Diffuse = float4(albedo.rgb * Material.Diffuse, ambient.b);
+	output.Specular = float4(specular, Material.Shininess);
 
 	return output;
 }

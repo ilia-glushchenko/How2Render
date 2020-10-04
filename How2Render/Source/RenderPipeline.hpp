@@ -2,6 +2,7 @@
 
 #include "Application.hpp"
 #include "RenderPass.hpp"
+#include "Wrapper/RasterizerState.hpp"
 #include <cstdint>
 
 namespace h2r
@@ -19,6 +20,9 @@ namespace h2r
                 DeviceTexture specularShininess;
             };
 
+            TextureSamplers samplers;
+
+            DeviceTexture shadowDepth;
             DeviceTexture ao1;
             DeviceTexture ao2;
             GBuffers gbuffers;
@@ -26,16 +30,52 @@ namespace h2r
             DeviceTexture gammaCorrection;
             DeviceTexture debug;
             Swapchain swapchain;
-
             DeviceTexture noiseTexture;
+        };
+
+        struct Shaders
+        {
+            ShaderProgram depthPrePassOpaque;
+            ShaderProgram depthPrePassTransparent;
+
+            ShaderProgram shadowDepthOpaque;
+            ShaderProgram shadowDepthTransparent;
+
+            ShaderProgram ssaoCompute;
+            ShaderProgram ssaoVerticalBlur;
+            ShaderProgram ssaoHorizontalBlur;
+
+            ShaderProgram forwardShading;
+
+            ShaderProgram gBufferPass;
+            ShaderProgram deferredShading;
+
+            ShaderProgram translucentPass;
+            ShaderProgram gammaCorrection;
+            ShaderProgram debug;
+        };
+
+        struct ConstBuffers
+        {
+            HostConstBuffers host;
+            DeviceConstBuffers device;
+        };
+
+        struct States
+        {
+            BlendStates blend;
+            RasterizerStates rasterizer;
+            DepthStencilStates depthStencil;
         };
 
         Pass depthPrePassOpaque;
         Pass depthPrePassTransparent;
-        Pass deferredGBufferPassOpaque;
+        Pass shadowDepthOpaque;
+        Pass shadowDepthTransparent;
         Pass ssao;
         Pass ssaoVerticalBlurPass;
         Pass ssaoHorizontalBlurPass;
+        Pass deferredGBufferPassOpaque;
         Pass deferredShadingOpaque;
         Pass forwardShadingOpaque;
         Pass forwardShadingTransparent;
@@ -49,7 +89,26 @@ namespace h2r
 
     inline void CleanupPipelineTextures(Pipeline::Textures &textures);
 
-    inline Pipeline CreatePipeline(Application const &app, Pipeline::Textures const &targets);
+    inline std::optional<Pipeline::Shaders> CreatePipelineShaders(Context const &context);
+
+    inline void CleanupPipelineShaders(Pipeline::Shaders &shaders);
+
+    inline bool ReloadePipelineShaders(Context const &context, InputEvents const &inputs, Pipeline::Shaders &shaders);
+
+    inline std::optional<Pipeline::ConstBuffers> CreatePipelineConstBuffers(Context const &context);
+
+    inline void CleanupPipelineConstBuffers(Pipeline::ConstBuffers &cbuffers);
+
+    inline std::optional<Pipeline::States> CreatePipelineStates(Context const &context);
+
+    inline void CleanupPipelineStates(Pipeline::States &states);
+
+    inline Pipeline CreateRenderPipeline(
+        Swapchain const &swapchain,
+        Pipeline::Shaders const &shaders,
+        Pipeline::ConstBuffers const &cbuffers,
+        Pipeline::States const &states,
+        Pipeline::Textures const &textures);
 
 } // namespace h2r
 
@@ -62,7 +121,7 @@ namespace h2r
         Pipeline::Textures::GBuffers gbuffers;
 
         {
-            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8_UNORM);
             if (!texture)
             {
                 printf("Failed to create Normal GBuffer device texture\n");
@@ -71,7 +130,7 @@ namespace h2r
             gbuffers.normalXY = texture.value();
         }
         {
-            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8_UNORM);
             if (!texture)
             {
                 printf("Failed to create Ambient GBuffer device texture\n");
@@ -80,7 +139,7 @@ namespace h2r
             gbuffers.ambientRG = texture.value();
         }
         {
-            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
             if (!texture)
             {
                 printf("Failed to create Diffuse GBuffer device texture\n");
@@ -89,7 +148,7 @@ namespace h2r
             gbuffers.diffuseAmbientB = texture.value();
         }
         {
-            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, width, height, DXGI_FORMAT_R8G8B8A8_UNORM);
             if (!texture)
             {
                 printf("Failed to create Specular GBuffer device texture\n");
@@ -106,12 +165,22 @@ namespace h2r
     {
         auto const windowSize = XMUINT2(swapchain.width, swapchain.height);
         Pipeline::Textures textures;
+        textures.samplers = CreateTextureSamplers(context);
         textures.swapchain = swapchain;
         textures.gbuffers = CreateGBuffers(context, windowSize.x, windowSize.y).value();
 
         {
-            auto texture = CreateRenderTargetTexture(
-                context, windowSize.x, windowSize.y, DXGI_FORMAT_R8_UNORM, D3D11_BIND_UNORDERED_ACCESS);
+            auto texture = CreateDepthStencilTexture(context, 2048, 2048, eDepthPrecision::Unorm16);
+            if (!texture)
+            {
+                printf("Failed to create shadow depth texture!\n");
+                return std::nullopt;
+            }
+            textures.shadowDepth = texture.value();
+        }
+
+        {
+            auto texture = CreateComputeTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8_UNORM);
             if (!texture)
             {
                 printf("Failed to create ao render target!\n");
@@ -121,8 +190,7 @@ namespace h2r
         }
 
         {
-            auto texture = CreateRenderTargetTexture(
-                context, windowSize.x, windowSize.y, DXGI_FORMAT_R8_UNORM, D3D11_BIND_UNORDERED_ACCESS);
+            auto texture = CreateComputeTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8_UNORM);
             if (!texture)
             {
                 printf("Failed to create ao render target!\n");
@@ -132,7 +200,7 @@ namespace h2r
         }
 
         {
-            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
             if (!texture)
             {
                 printf("Failed to create shading pass render target!\n");
@@ -142,7 +210,7 @@ namespace h2r
         }
 
         {
-            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
             if (!texture)
             {
                 printf("Failed to create gamma correction render target!\n");
@@ -152,7 +220,7 @@ namespace h2r
         }
 
         {
-            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+            auto texture = CreateRenderTargetTexture(context, windowSize.x, windowSize.y, DXGI_FORMAT_R8G8B8A8_UNORM);
             if (!texture)
             {
                 printf("Failed to create debug render target!\n");
@@ -162,7 +230,7 @@ namespace h2r
         }
 
         {
-            textures.noiseTexture = GenerateNoiseTexture(context, 4, 4);
+            textures.noiseTexture = GenerateNoiseTexture(context, 16, 16);
         }
 
         return textures;
@@ -170,36 +238,320 @@ namespace h2r
 
     inline void CleanupPipelineTextures(Pipeline::Textures &textures)
     {
-        CleanupDeviceTexture(textures.ao1);
-        CleanupDeviceTexture(textures.ao2);
-        CleanupDeviceTexture(textures.basePass);
-        CleanupDeviceTexture(textures.gammaCorrection);
+        CleanupTextureSamplers(textures.samplers);
         CleanupDeviceTexture(textures.gbuffers.normalXY);
         CleanupDeviceTexture(textures.gbuffers.ambientRG);
         CleanupDeviceTexture(textures.gbuffers.diffuseAmbientB);
         CleanupDeviceTexture(textures.gbuffers.specularShininess);
-        CleanupDeviceTexture(textures.noiseTexture);
+        CleanupDeviceTexture(textures.shadowDepth);
+        CleanupDeviceTexture(textures.ao1);
+        CleanupDeviceTexture(textures.ao2);
+        CleanupDeviceTexture(textures.basePass);
+        CleanupDeviceTexture(textures.gammaCorrection);
         CleanupDeviceTexture(textures.debug);
+        CleanupDeviceTexture(textures.noiseTexture);
     }
 
-    inline Pipeline CreatePipeline(Application const &app, Pipeline::Textures const &targets)
+    inline std::optional<Pipeline::Shaders> CreatePipelineShaders(Context const &context)
     {
-        Pipeline pipeline = Pipeline{
+        Pipeline::Shaders shaders;
+
+        ShaderProgramDescriptor depthPrePassDescriptor;
+        depthPrePassDescriptor.vertexShaderPath = "Shaders/Depth.fx";
+        depthPrePassDescriptor.pixelShaderPath = "Shaders/Depth.fx";
+        if (auto shader = CreateShaderProgram(context, depthPrePassDescriptor); shader)
+        {
+            shaders.depthPrePassOpaque = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        depthPrePassDescriptor.definitions = {
+            {"ENABLE_TRANSPARENCY", "1"},
+            {nullptr, nullptr},
+        };
+        if (auto shader = CreateShaderProgram(context, depthPrePassDescriptor); shader)
+        {
+            shaders.depthPrePassTransparent = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor shadowDepthOpaqueDesc;
+        shadowDepthOpaqueDesc.vertexShaderPath = "Shaders/ShadowDepth.fx";
+        if (auto shader = CreateShaderProgram(context, shadowDepthOpaqueDesc); shader)
+        {
+            shaders.shadowDepthOpaque = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor shadowDepthTransparentDesc;
+        shadowDepthTransparentDesc.vertexShaderPath = "Shaders/ShadowDepth.fx";
+        shadowDepthTransparentDesc.pixelShaderPath = "Shaders/ShadowDepth.fx";
+        if (auto shader = CreateShaderProgram(context, shadowDepthTransparentDesc); shader)
+        {
+            shaders.shadowDepthTransparent = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor ssaoComputeDescriptor;
+        ssaoComputeDescriptor.computeShaderPath = "Shaders/SSAO.fx";
+        ssaoComputeDescriptor.computeShaderEntryPoint = "ComputeSSAO";
+        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
+        {
+            shaders.ssaoCompute = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ssaoComputeDescriptor.computeShaderPath = "Shaders/SsaoBlur.fx";
+        ssaoComputeDescriptor.computeShaderEntryPoint = "GaussianBlurVertical";
+        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
+        {
+            shaders.ssaoVerticalBlur = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ssaoComputeDescriptor.computeShaderEntryPoint = "GaussianBlurHorizontal";
+        if (auto shader = CreateShaderProgram(context, ssaoComputeDescriptor); shader)
+        {
+            shaders.ssaoHorizontalBlur = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor forwardShadingPassDesc;
+        forwardShadingPassDesc.vertexShaderPath = "Shaders/ForwardShading.fx";
+        forwardShadingPassDesc.pixelShaderPath = "Shaders/ForwardShading.fx";
+        if (auto forwardShading = CreateShaderProgram(context, forwardShadingPassDesc); forwardShading)
+        {
+            shaders.forwardShading = forwardShading.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor gBufferPassDesc;
+        gBufferPassDesc.vertexShaderPath = "Shaders/DeferredGBufferPass.fx";
+        gBufferPassDesc.pixelShaderPath = "Shaders/DeferredGBufferPass.fx";
+        if (auto gBufferPass = CreateShaderProgram(context, gBufferPassDesc); gBufferPass)
+        {
+            shaders.gBufferPass = gBufferPass.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor deferredShadingPassDesc;
+        deferredShadingPassDesc.vertexShaderPath = "Shaders/DeferredShading.fx";
+        deferredShadingPassDesc.pixelShaderPath = "Shaders/DeferredShading.fx";
+        if (auto deferredShading = CreateShaderProgram(context, deferredShadingPassDesc); deferredShading)
+        {
+            shaders.deferredShading = deferredShading.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor translucencyPassDesc;
+        translucencyPassDesc.vertexShaderPath = "Shaders/Translucent.fx";
+        translucencyPassDesc.pixelShaderPath = "Shaders/Translucent.fx";
+        if (auto translucentPass = CreateShaderProgram(context, translucencyPassDesc); translucentPass)
+        {
+            shaders.translucentPass = translucentPass.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor gammaCorrectionDesc;
+        gammaCorrectionDesc.vertexShaderPath = "Shaders/GammaCorrection.fx";
+        gammaCorrectionDesc.pixelShaderPath = "Shaders/GammaCorrection.fx";
+        if (auto gammaCorrection = CreateShaderProgram(context, gammaCorrectionDesc); gammaCorrection)
+        {
+            shaders.gammaCorrection = gammaCorrection.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        ShaderProgramDescriptor debugDesc;
+        debugDesc.vertexShaderPath = "Shaders/Debug.fx";
+        debugDesc.pixelShaderPath = "Shaders/Debug.fx";
+        if (auto shader = CreateShaderProgram(context, debugDesc); shader)
+        {
+            shaders.debug = shader.value();
+        }
+        else
+        {
+            CleanupPipelineShaders(shaders);
+            return std::nullopt;
+        }
+
+        return shaders;
+    }
+
+    inline void CleanupPipelineShaders(Pipeline::Shaders &shaders)
+    {
+        CleanupShaderProgram(shaders.depthPrePassOpaque);
+        CleanupShaderProgram(shaders.depthPrePassTransparent);
+        CleanupShaderProgram(shaders.shadowDepthOpaque);
+        CleanupShaderProgram(shaders.shadowDepthTransparent);
+        CleanupShaderProgram(shaders.ssaoCompute);
+        CleanupShaderProgram(shaders.ssaoVerticalBlur);
+        CleanupShaderProgram(shaders.ssaoHorizontalBlur);
+        CleanupShaderProgram(shaders.forwardShading);
+        CleanupShaderProgram(shaders.gBufferPass);
+        CleanupShaderProgram(shaders.deferredShading);
+        CleanupShaderProgram(shaders.translucentPass);
+        CleanupShaderProgram(shaders.gammaCorrection);
+        CleanupShaderProgram(shaders.debug);
+    }
+
+    inline bool ReloadePipelineShaders(Context const &context, InputEvents const &inputs, Pipeline::Shaders &shaders)
+    {
+        if (IsKeyPressed(inputs, SDL_SCANCODE_F5))
+        {
+            if (auto newShaders = CreatePipelineShaders(context); newShaders)
+            {
+                CleanupPipelineShaders(shaders);
+                shaders = newShaders.value();
+                printf("Shader hot reload succeeded\n");
+                return true;
+            }
+
+            printf("Shader hot reload failed\n");
+        }
+
+        return false;
+    }
+
+    inline std::optional<Pipeline::ConstBuffers> CreatePipelineConstBuffers(Context const &context)
+    {
+        Pipeline::ConstBuffers cbuffers;
+
+        auto cbuffersDevice = CreateDeviceConstantBuffers(context);
+        if (!cbuffersDevice)
+        {
+            printf("Failed to create device const buffers.\n");
+            return std::nullopt;
+        }
+        cbuffers.device = cbuffersDevice.value();
+        cbuffers.host = CreateHostConstBuffers();
+
+        return cbuffers;
+    }
+
+    inline void CleanupPipelineConstBuffers(Pipeline::ConstBuffers &cbuffers)
+    {
+        CleanupDeviceConstantBuffers(cbuffers.device);
+    }
+
+    inline std::optional<Pipeline::States> CreatePipelineStates(Context const &context)
+    {
+        Pipeline::States states;
+
+        {
+            auto state = CreateBlendStates(context);
+            if (!state)
+            {
+                printf("Failed to create blend states.\n");
+                return std::nullopt;
+            }
+            states.blend = state.value();
+        }
+
+        {
+            auto state = CreateRasterizerStates(context);
+            if (!state)
+            {
+                printf("Failed to create rasterizer states.\n");
+                CleanupPipelineStates(states);
+                return std::nullopt;
+            }
+            states.rasterizer = state.value();
+        }
+
+        {
+            auto state = CreateDepthStencilStates(context);
+            if (!state)
+            {
+                printf("Failed to create depth stencil states.\n");
+                CleanupPipelineStates(states);
+                return std::nullopt;
+            }
+            states.depthStencil = state.value();
+        }
+
+        return states;
+    }
+
+    inline void CleanupPipelineStates(Pipeline::States &states)
+    {
+        CleanupBlendStates(states.blend);
+        CleanupRasterizerStates(states.rasterizer);
+        CleanupDepthStencilStates(states.depthStencil);
+    }
+
+    inline Pipeline CreateRenderPipeline(
+        Swapchain const &swapchain,
+        Pipeline::Shaders const &shaders,
+        Pipeline::ConstBuffers const &cbuffers,
+        Pipeline::States const &states,
+        Pipeline::Textures const &textures)
+    {
+        return Pipeline{
             .depthPrePassOpaque{
                 .name{L"Depth pre-pass opaque"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.depthPrePassOpaque},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pTrilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.gbuffers.normalXY.width, textures.gbuffers.normalXY.height},
+                .program{&shaders.depthPrePassOpaque},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pTrilinearSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pLessReadWrite},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{targets.gbuffers.normalXY.renderTargetView},
+                .depthStencilState{states.depthStencil.pLessReadWrite},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{textures.gbuffers.normalXY.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_DEPTH_STENCIL | RENDER_PASS_CLEAR_FLAG_RENDER_TARGET},
                 .clearValue{DirectX::Colors::Black},
@@ -207,128 +559,184 @@ namespace h2r
             .depthPrePassTransparent{
                 .name{L"Depth pre-pass transparent"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.depthPrePassTransparent},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pTrilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.gbuffers.normalXY.width, textures.gbuffers.normalXY.height},
+                .program{&shaders.depthPrePassTransparent},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pTrilinearSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pLessReadWrite},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{targets.gbuffers.normalXY.renderTargetView},
+                .depthStencilState{states.depthStencil.pLessReadWrite},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{textures.gbuffers.normalXY.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
             },
-            .deferredGBufferPassOpaque{
-                .name{L"GBuffer pass opaque"},
+            .shadowDepthOpaque{
+                .name{L"Shadow depth opaque"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.gBufferPass},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pAnisotropicSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.shadowDepth.width, textures.shadowDepth.height},
+                .program{&shaders.shadowDepthOpaque},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.shadowDepth},
+                .samplerStates{textures.samplers.pPointSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pEqualRead},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{
-                    targets.gbuffers.ambientRG.renderTargetView,
-                    targets.gbuffers.diffuseAmbientB.renderTargetView,
-                    targets.gbuffers.specularShininess.renderTargetView,
-                },
+                .depthStencilState{states.depthStencil.pLessReadWrite},
+                .depthStencilView{textures.shadowDepth.depthStencilView},
+                .targets{},
                 .targetsCS{},
-                .clearFlags{RENDER_PASS_CLEAR_FLAG_RENDER_TARGET},
-                .clearValue{DirectX::Colors::White},
+                .clearFlags{RENDER_PASS_CLEAR_FLAG_DEPTH_STENCIL},
+                .clearValue{DirectX::Colors::Black},
+            },
+            .shadowDepthTransparent{
+                .name{L"Shadow depth transparent"},
+                .type{ePassType::Regular},
+                .viewportSize{textures.shadowDepth.width, textures.shadowDepth.height},
+                .program{&shaders.shadowDepthTransparent},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.shadowDepth},
+                .samplerStates{textures.samplers.pPointSampler},
+                .cbuffers{&cbuffers.device},
+                .resourcesVS{},
+                .resourceOffsetVS{0},
+                .resourcesPS{},
+                .resourceOffsetPS{0},
+                .resourcesCS{},
+                .depthStencilState{states.depthStencil.pLessReadWrite},
+                .depthStencilView{textures.shadowDepth.depthStencilView},
+                .targets{},
+                .targetsCS{},
+                .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
+                .clearValue{DirectX::Colors::Black},
             },
             .ssao{
                 .name{L"SSAO"},
                 .type{ePassType::Compute},
-                .program{&app.shaders.ssaoCompute},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pPointSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.ao1.width, textures.ao1.height},
+                .program{&shaders.ssaoCompute},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pPointSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{
-                    app.swapchain.depthStencilShaderResourceView,
-                    targets.gbuffers.normalXY.shaderResourceView,
-                    targets.noiseTexture.shaderResourceView,
+                    swapchain.depthStencilShaderResourceView,
+                    textures.gbuffers.normalXY.shaderResourceView,
+                    textures.noiseTexture.shaderResourceView,
                 },
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
                 .targets{},
-                .targetsCS{targets.ao1.unorderedAccessView},
+                .targetsCS{textures.ao1.unorderedAccessView},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_FLOAT_UAVS},
                 .clearValue{DirectX::Colors::White},
             },
             .ssaoVerticalBlurPass{
                 .name{L"SSAO blur vertical"},
                 .type{ePassType::Compute},
-                .program{&app.shaders.ssaoVerticalBlur},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pBilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.ao2.width, textures.ao2.height},
+                .program{&shaders.ssaoVerticalBlur},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pBilinearSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
-                .resourcesCS{targets.ao1.shaderResourceView},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .resourcesCS{textures.ao1.shaderResourceView},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
                 .targets{},
-                .targetsCS{targets.ao2.unorderedAccessView},
+                .targetsCS{textures.ao2.unorderedAccessView},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
             },
             .ssaoHorizontalBlurPass{
                 .name{L"SSAO blur horizontal"},
                 .type{ePassType::Compute},
-                .program{&app.shaders.ssaoHorizontalBlur},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pBilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.ao1.width, textures.ao1.height},
+                .program{&shaders.ssaoHorizontalBlur},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pBilinearSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
-                .resourcesCS{targets.ao2.shaderResourceView},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .resourcesCS{textures.ao2.shaderResourceView},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
                 .targets{},
-                .targetsCS{targets.ao1.unorderedAccessView},
+                .targetsCS{textures.ao1.unorderedAccessView},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
+            },
+            .deferredGBufferPassOpaque{
+                .name{L"GBuffer pass opaque"},
+                .type{ePassType::Regular},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.gBufferPass},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pAnisotropicSampler},
+                .cbuffers{&cbuffers.device},
+                .resourcesVS{},
+                .resourceOffsetVS{0},
+                .resourcesPS{},
+                .resourceOffsetPS{0},
+                .resourcesCS{},
+                .depthStencilState{states.depthStencil.pEqualRead},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{
+                    textures.gbuffers.ambientRG.renderTargetView,
+                    textures.gbuffers.diffuseAmbientB.renderTargetView,
+                    textures.gbuffers.specularShininess.renderTargetView,
+                },
+                .targetsCS{},
+                .clearFlags{RENDER_PASS_CLEAR_FLAG_RENDER_TARGET},
+                .clearValue{DirectX::Colors::White},
             },
             .deferredShadingOpaque{
                 .name{L"Deferred shading opaque"},
                 .type{ePassType::FullScreen},
-                .program{&app.shaders.deferredShading},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pPointSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.deferredShading},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pPointSampler, textures.samplers.pDepthComparationSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{
-                    app.swapchain.depthStencilShaderResourceView,
-                    targets.gbuffers.normalXY.shaderResourceView,
-                    targets.gbuffers.ambientRG.shaderResourceView,
-                    targets.gbuffers.diffuseAmbientB.shaderResourceView,
-                    targets.gbuffers.specularShininess.shaderResourceView,
-                    targets.ao1.shaderResourceView,
+                    swapchain.depthStencilShaderResourceView,
+                    textures.gbuffers.normalXY.shaderResourceView,
+                    textures.gbuffers.ambientRG.shaderResourceView,
+                    textures.gbuffers.diffuseAmbientB.shaderResourceView,
+                    textures.gbuffers.specularShininess.shaderResourceView,
+                    textures.ao1.shaderResourceView,
+                    textures.shadowDepth.shaderResourceView,
+                    textures.noiseTexture.shaderResourceView,
                 },
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
-                .targets{targets.basePass.renderTargetView},
+                .targets{textures.basePass.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
@@ -336,18 +744,27 @@ namespace h2r
             .forwardShadingOpaque{
                 .name{L"Forward shading opaque"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.forwardShading},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pAnisotropicSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.forwardShading},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{
+                    textures.samplers.pPointSampler,
+                    textures.samplers.pAnisotropicSampler,
+                    textures.samplers.pDepthComparationSampler,
+                },
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
-                .resourcesPS{targets.ao1.shaderResourceView},
-                .resourceOffsetPS{4},
+                .resourcesPS{
+                    textures.ao1.shaderResourceView,
+                    textures.shadowDepth.shaderResourceView,
+                    textures.noiseTexture.shaderResourceView},
+                .resourceOffsetPS{MaterialTextureCount},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pEqualRead},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{targets.basePass.renderTargetView},
+                .depthStencilState{states.depthStencil.pEqualRead},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{textures.basePass.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_RENDER_TARGET},
                 .clearValue{DirectX::Colors::White},
@@ -355,18 +772,28 @@ namespace h2r
             .forwardShadingTransparent{
                 .name{L"Transparent"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.forwardShading},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pTrilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.forwardShading},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{
+                    textures.samplers.pPointSampler,
+                    textures.samplers.pAnisotropicSampler,
+                    textures.samplers.pDepthComparationSampler,
+                },
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
-                .resourcesPS{targets.ao1.shaderResourceView},
-                .resourceOffsetPS{4},
+                .resourcesPS{
+                    textures.ao1.shaderResourceView,
+                    textures.shadowDepth.shaderResourceView,
+                    textures.noiseTexture.shaderResourceView,
+                },
+                .resourceOffsetPS{MaterialTextureCount},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pEqualRead},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{targets.basePass.renderTargetView},
+                .depthStencilState{states.depthStencil.pEqualRead},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{textures.basePass.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
@@ -374,18 +801,20 @@ namespace h2r
             .forwardShadingTranclucent{
                 .name{L"Translucent"},
                 .type{ePassType::Regular},
-                .program{&app.shaders.translucentPass},
-                .blendState{&app.shaders.blendStates.normal},
-                .samplerStates{app.shaders.samplers.pTrilinearSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.translucentPass},
+                .blendState{&states.blend.normal},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pTrilinearSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pLessReadWrite},
-                .depthStencilView{app.swapchain.depthStencilView},
-                .targets{targets.basePass.renderTargetView},
+                .depthStencilState{states.depthStencil.pLessReadWrite},
+                .depthStencilView{swapchain.depthStencilView},
+                .targets{textures.basePass.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
@@ -393,18 +822,20 @@ namespace h2r
             .gammaCorrection{
                 .name{L"Gamma correction"},
                 .type{ePassType::FullScreen},
-                .program{&app.shaders.gammaCorrection},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pPointSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.gammaCorrection},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pPointSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
-                .resourcesPS{targets.basePass.shaderResourceView},
+                .resourcesPS{textures.basePass.shaderResourceView},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
-                .targets{targets.gammaCorrection.renderTargetView},
+                .targets{textures.gammaCorrection.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
@@ -412,26 +843,29 @@ namespace h2r
             .debug{
                 .name{L"Debug"},
                 .type{ePassType::FullScreen},
-                .program{&app.shaders.debug},
-                .blendState{&app.shaders.blendStates.none},
-                .samplerStates{app.shaders.samplers.pPointSampler},
-                .cbuffers{&app.shaders.cbuffersDevice},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
+                .program{&shaders.debug},
+                .blendState{&states.blend.none},
+                .rasterizerState{states.rasterizer.defaultRS},
+                .samplerStates{textures.samplers.pPointSampler},
+                .cbuffers{&cbuffers.device},
                 .resourcesVS{},
                 .resourceOffsetVS{0},
                 .resourcesPS{
-                    targets.gammaCorrection.shaderResourceView,
-                    app.swapchain.depthStencilShaderResourceView,
-                    targets.ao1.shaderResourceView,
-                    targets.gbuffers.normalXY.shaderResourceView,
-                    targets.gbuffers.ambientRG.shaderResourceView,
-                    targets.gbuffers.diffuseAmbientB.shaderResourceView,
-                    targets.gbuffers.specularShininess.shaderResourceView,
+                    textures.gammaCorrection.shaderResourceView,
+                    swapchain.depthStencilShaderResourceView,
+                    textures.ao1.shaderResourceView,
+                    textures.shadowDepth.shaderResourceView,
+                    textures.gbuffers.normalXY.shaderResourceView,
+                    textures.gbuffers.ambientRG.shaderResourceView,
+                    textures.gbuffers.diffuseAmbientB.shaderResourceView,
+                    textures.gbuffers.specularShininess.shaderResourceView,
                 },
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
-                .targets{targets.debug.renderTargetView},
+                .targets{textures.debug.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
@@ -439,8 +873,10 @@ namespace h2r
             .ui{
                 .name{L"UI pass"},
                 .type{ePassType::None},
+                .viewportSize{textures.basePass.width, textures.basePass.height},
                 .program{nullptr},
                 .blendState{nullptr},
+                .rasterizerState{states.rasterizer.defaultRS},
                 .samplerStates{},
                 .cbuffers{nullptr},
                 .resourcesVS{},
@@ -448,16 +884,14 @@ namespace h2r
                 .resourcesPS{},
                 .resourceOffsetPS{0},
                 .resourcesCS{},
-                .depthStencilState{app.shaders.depthStencilStates.pDisable},
+                .depthStencilState{states.depthStencil.pDisable},
                 .depthStencilView{nullptr},
-                .targets{targets.debug.renderTargetView},
+                .targets{textures.debug.renderTargetView},
                 .targetsCS{},
                 .clearFlags{RENDER_PASS_CLEAR_FLAG_NONE},
                 .clearValue{DirectX::Colors::Black},
             },
         };
-
-        return pipeline;
     }
 
 } // namespace h2r

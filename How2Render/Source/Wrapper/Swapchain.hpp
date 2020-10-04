@@ -124,18 +124,6 @@ namespace h2r
 			assert(SUCCEEDED(hr));
 		}
 
-		// Setup the viewport
-		{
-			D3D11_VIEWPORT viewport;
-			viewport.Width = (FLOAT)windowSize.x;
-			viewport.Height = (FLOAT)windowSize.y;
-			viewport.MinDepth = 0.0f;
-			viewport.MaxDepth = 1.0f;
-			viewport.TopLeftX = 0;
-			viewport.TopLeftY = 0;
-			context.pImmediateContext->RSSetViewports(1, &viewport);
-		}
-
 		return swapchain;
 	}
 

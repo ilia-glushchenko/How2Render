@@ -1,8 +1,10 @@
+#include "CBuffers.fx"
+
 //--------------------------------------------------------------------------------------
 // Texture Samplers
 //--------------------------------------------------------------------------------------
-Texture2D linearColorTexture : register(t0);
-SamplerState textureSampler : register(s0);
+Texture2D txAmbient : register(t0);
+SamplerState texSampler : register(s0);
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -25,7 +27,8 @@ PS_INPUT VS(VS_INPUT input)
 {
 	PS_INPUT output = (PS_INPUT)0;
 
-	output.Pos = float4(input.Pos, 1.f);
+	matrix WVP = mul(Lights.ViewProj, Transform.World);
+	output.Pos = mul(WVP, float4(input.Pos, 1.f));
 	output.Tex = input.Tex;
 
 	return output;
@@ -34,9 +37,12 @@ PS_INPUT VS(VS_INPUT input)
 //--------------------------------------------------------------------------------------
 // Pixel Shader
 //--------------------------------------------------------------------------------------
-float4 PS(PS_INPUT input) : SV_Target
+void PS(PS_INPUT input)
 {
-	float3 linearColor = linearColorTexture.Sample(textureSampler, input.Tex).rgb;
-	float3 nonLinearColor = pow(abs(linearColor), 1.0f / 2.2f);
-	return float4(nonLinearColor, 1.);
+	const float threshold = 0.3f;
+
+	if (txAmbient.Sample(texSampler, input.Tex).a < threshold)
+	{
+		discard;
+	}
 }

@@ -19,6 +19,7 @@ namespace h2r
 	IndexBuffer CreateIndexBuffer(Context const &context, std::vector<IndexType> const &indices)
 	{
 		D3D11_BUFFER_DESC bufferDesc;
+		ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
 
 		bufferDesc.ByteWidth = (UINT)(sizeof(IndexType) * indices.size());
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;

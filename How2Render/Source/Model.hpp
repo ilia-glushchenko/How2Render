@@ -37,6 +37,16 @@ namespace h2r
 			deviceModel.materials.push_back(CreateDeviceMaterial(context, cache, hostMaterail).value());
 		}
 
+		std::sort(deviceModel.opaqueMeshes.begin(), deviceModel.opaqueMeshes.end(),
+			[](DeviceMesh const& a, DeviceMesh const& b) -> bool {
+				return a.materialId < b.materialId;
+		});
+
+		std::sort(deviceModel.transparentMeshes.begin(), deviceModel.transparentMeshes.end(),
+			[](DeviceMesh const& a, DeviceMesh const& b) -> bool {
+				return a.materialId < b.materialId;
+		});
+
 		return deviceModel;
 	}
 

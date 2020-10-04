@@ -26,12 +26,16 @@ namespace h2r
 			pixel = static_cast<uint8_t>(UINT8_MAX * GenerateUniformRealDist(0.f, 1.f));
 		}
 
-		DeviceTexture::Descriptor devDesc;
-		devDesc.hostTexture = CreateHostTexture(hostDesc);
-		devDesc.bindFlags = D3D11_BIND_SHADER_RESOURCE;
-		devDesc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::NONE;
+		HostTexture hostTexture = CreateHostTexture(hostDesc);
 
-		return CreateDeviceTexture(context, devDesc).value();
+		DeviceTexture::Descriptor devTexDesc;
+		devTexDesc.bindFlags = D3D11_BIND_SHADER_RESOURCE;
+		devTexDesc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::NONE;
+		devTexDesc.textureFormat = hostTexture.format;
+		devTexDesc.srvFormat = hostTexture.format;
+		devTexDesc.hostTexture = hostTexture;
+
+		return CreateDeviceTexture(context, devTexDesc).value();
 	}
 
 } // namespace h2r

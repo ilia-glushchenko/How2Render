@@ -1,21 +1,11 @@
+#include "CBuffers.fx"
+
 //--------------------------------------------------------------------------------------
 // Textures
 //--------------------------------------------------------------------------------------
 Texture2D<float> sourceAO : register(t0);
 RWTexture2D<float> blurredAO : register(u0);
 SamplerState linearSampler : register(s0);
-
-//--------------------------------------------------------------------------------------
-// Constant Buffer Variables
-//--------------------------------------------------------------------------------------
-cbuffer PerFrameCB : register(b2)
-{
-    matrix View;
-    matrix Proj;
-    matrix inverseView;
-    matrix inverseProj;
-    float4 CameraPos;
-};
 
 //--------------------------------------------------------------------------------------
 // Compute Shader

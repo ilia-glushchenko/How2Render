@@ -22,46 +22,48 @@ namespace h2r
 
     struct Pass
     {
-        wchar_t const* name = nullptr;
+        wchar_t const *name = nullptr;
         ePassType type = ePassType::None;
+        XMUINT2 viewportSize = {};
 
-        ShaderProgram const* program = nullptr;
-        BlendState const* blendState = nullptr;
-        std::vector<ID3D11SamplerState*> samplerStates = {};
-        DeviceConstBuffers const* cbuffers = nullptr;
+        ShaderProgram const *program = nullptr;
+        BlendState const *blendState = nullptr;
+        ID3D11RasterizerState* rasterizerState = nullptr;
+        std::vector<ID3D11SamplerState *> samplerStates = {};
+        DeviceConstBuffers const *cbuffers = nullptr;
 
-        std::vector<ID3D11ShaderResourceView*> resourcesVS = {};
+        std::vector<ID3D11ShaderResourceView *> resourcesVS = {};
         uint32_t resourceOffsetVS = 0;
-        std::vector<ID3D11ShaderResourceView*> resourcesPS = {};
+        std::vector<ID3D11ShaderResourceView *> resourcesPS = {};
         uint32_t resourceOffsetPS = 0;
-        std::vector<ID3D11ShaderResourceView*> resourcesCS = {};
+        std::vector<ID3D11ShaderResourceView *> resourcesCS = {};
 
-        ID3D11DepthStencilState* depthStencilState = nullptr;
-        ID3D11DepthStencilView* depthStencilView = nullptr;
-        std::vector<ID3D11RenderTargetView*> targets = {};
-        std::vector<ID3D11UnorderedAccessView*> targetsCS = {};
+        ID3D11DepthStencilState *depthStencilState = nullptr;
+        ID3D11DepthStencilView *depthStencilView = nullptr;
+        std::vector<ID3D11RenderTargetView *> targets = {};
+        std::vector<ID3D11UnorderedAccessView *> targetsCS = {};
 
         RenderPassClearFlags clearFlags = RENDER_PASS_CLEAR_FLAG_NONE;
         XMVECTORF32 clearValue = DirectX::Colors::Black;
     };
 
-    inline void BindRenderPass(Context const& context, Pass const& pass);
+    inline void BindRenderPass(Context const &context, Pass const &pass);
 
-    inline void UnbindRenderPass(Context const& context, Pass const& pass);
+    inline void UnbindRenderPass(Context const &context, Pass const &pass);
 
 } // namespace h2r
 
 namespace h2r
 {
     inline void BindShaderResources(
-        Context const& context,
-        ID3D11ShaderResourceView* const* resourcesVS,
+        Context const &context,
+        ID3D11ShaderResourceView *const *resourcesVS,
         uint32_t countVS,
         uint32_t offsetVS,
-        ID3D11ShaderResourceView* const* resourcesPS,
+        ID3D11ShaderResourceView *const *resourcesPS,
         uint32_t countPS,
         uint32_t offsetPS,
-        ID3D11ShaderResourceView* const* resourcesCS,
+        ID3D11ShaderResourceView *const *resourcesCS,
         uint32_t countCS)
     {
         if (countVS > 0)
@@ -79,14 +81,14 @@ namespace h2r
     }
 
     inline void UnbindShaderResources(
-        Context const& context,
+        Context const &context,
         uint32_t countVS,
         uint32_t offsetVS,
         uint32_t countPS,
         uint32_t offsetPS,
         uint32_t countCS)
     {
-        static std::vector<ID3D11ShaderResourceView*> nullResources;
+        static std::vector<ID3D11ShaderResourceView *> nullResources;
 
         if (countVS > 0)
         {
@@ -105,10 +107,24 @@ namespace h2r
         }
     }
 
-    inline void BindRenderPass(Context const& context, Pass const& pass)
+    inline void BindViewport(Context const &context, uint32_t width, uint32_t height)
+    {
+        D3D11_VIEWPORT viewport;
+        viewport.Width = (FLOAT)width;
+        viewport.Height = (FLOAT)height;
+        viewport.MinDepth = 0.0f;
+        viewport.MaxDepth = 1.0f;
+        viewport.TopLeftX = 0;
+        viewport.TopLeftY = 0;
+
+        context.pImmediateContext->RSSetViewports(1, &viewport);
+    }
+
+    inline void BindRenderPass(Context const &context, Pass const &pass)
     {
         context.pAnnotation->BeginEvent(pass.name);
-        BindShaderResources(context,
+        BindShaderResources(
+            context,
             pass.resourcesVS.data(),
             (uint32_t)pass.resourcesVS.size(),
             pass.resourceOffsetVS,
@@ -121,12 +137,6 @@ namespace h2r
             context,
             pass.targets.data(), (uint32_t)pass.targets.size(), pass.depthStencilView,
             pass.targetsCS.data(), (uint32_t)pass.targetsCS.size());
-        ClearRenderTargets(
-            context,
-            pass.targets.data(), (uint32_t)pass.targets.size(), pass.depthStencilView,
-            pass.targetsCS.data(), (uint32_t)pass.targetsCS.size(),
-            pass.clearFlags,
-            pass.clearValue);
 
         if (pass.program)
         {
@@ -138,7 +148,7 @@ namespace h2r
         }
         if (!pass.samplerStates.empty())
         {
-            BindSampler(context, pass.samplerStates.data(), (uint32_t)pass.samplerStates.size());
+            BindSamplers(context, pass.samplerStates.data(), (uint32_t)pass.samplerStates.size());
         }
 
         if (pass.blendState)
@@ -149,9 +159,21 @@ namespace h2r
         {
             BindDepthStencilState(context, pass.depthStencilState);
         }
+
+        BindViewport(context, pass.viewportSize.x, pass.viewportSize.y);
+        if (pass.rasterizerState)
+        {
+            context.pImmediateContext->RSSetState(pass.rasterizerState);
+        }
+        ClearRenderTargets(
+            context,
+            pass.targets.data(), (uint32_t)pass.targets.size(), pass.depthStencilView,
+            pass.targetsCS.data(), (uint32_t)pass.targetsCS.size(),
+            pass.clearFlags,
+            pass.clearValue);
     }
 
-    inline void UnbindRenderPass(Context const& context, Pass const& pass)
+    inline void UnbindRenderPass(Context const &context, Pass const &pass)
     {
         UnbindShaderResources(
             context,
@@ -163,8 +185,8 @@ namespace h2r
         UnbindRenderTargets(context, (uint32_t)pass.targetsCS.size());
         UnbindShaders(context);
         UnbindConstantBuffer(context);
+        UnbindSamplers(context, (uint32_t)pass.samplerStates.size());
         UnbindBlendState(context);
-        UnbindSampler(context, (uint32_t)pass.samplerStates.size());
         UnbindDepthStencilState(context);
         context.pAnnotation->EndEvent();
     }

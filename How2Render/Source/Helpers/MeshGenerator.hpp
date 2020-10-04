@@ -47,7 +47,10 @@ namespace h2r
 		RenderObject sphereBlue;
 		RenderObject sphereRed;
 		RenderObject sphereGreen;
+
 		DeviceTexture::Descriptor desc;
+		desc.bindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+		desc.mipmapFlag = DeviceTexture::Descriptor::eMipMapFlag::USE_DX_GENERATED;
 
 		//Red
 		{
@@ -58,6 +61,7 @@ namespace h2r
 			if (hostTexture)
 			{
 				desc.hostTexture = hostTexture.value();
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
@@ -82,6 +86,7 @@ namespace h2r
 			if (hostTexture)
 			{
 				desc.hostTexture = hostTexture.value();
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
@@ -106,6 +111,7 @@ namespace h2r
 			if (hostTexture)
 			{
 				desc.hostTexture = hostTexture.value();
+				desc.textureFormat = desc.srvFormat = desc.rtvFormat = desc.hostTexture.format;
 				auto texture = CreateDeviceTexture(context, desc);
 				if (texture)
 				{
