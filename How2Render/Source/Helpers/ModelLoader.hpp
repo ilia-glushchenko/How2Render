@@ -125,23 +125,40 @@ namespace h2r
 	{
 		HostMaterial material;
 
-		auto ambientTexture = LoadTextureFromFile(
-			cache, modelDir / mat.ambient_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
+		auto ambientTexture = LoadTextureFromFile(cache,
+												  modelDir / mat.ambient_texname,
+												  TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP,
+												  DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		if (ambientTexture)
 		{
 			material.ambientTexture = ambientTexture.value();
 		}
-		auto albedoTexture = LoadTextureFromFile(
-			cache, modelDir / mat.diffuse_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
+		auto albedoTexture = LoadTextureFromFile(cache,
+												 modelDir / mat.diffuse_texname,
+												 TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP,
+												 DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		if (albedoTexture)
 		{
 			material.albedoTexture = albedoTexture.value();
 		}
 		auto specularTexture = LoadTextureFromFile(
-			cache, modelDir / mat.specular_texname, TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP);
+			cache, modelDir / mat.specular_texname,
+			TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP,
+			DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		if (specularTexture)
 		{
 			material.specularTexture = specularTexture.value();
+		}
+
+		// Some exporters export under different name
+		std::string normalMapName = mat.bump_texname.empty() ? mat.displacement_texname : mat.bump_texname;
+		auto normalTexture = LoadTextureFromFile(cache,
+												 modelDir / normalMapName,
+												 TEX_LOAD_FLAG_FLIP_VERTICALLY | TEX_LOAD_FLAG_GEN_CPU_MIPMAP,
+												 DXGI_FORMAT_R8G8B8A8_UNORM);
+		if (normalTexture)
+		{
+			material.normalTexture = normalTexture.value();
 		}
 
 		material.scalarAmbient = XMFLOAT3(mat.ambient);

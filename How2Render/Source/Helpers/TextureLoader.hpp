@@ -17,7 +17,10 @@ namespace h2r
 	constexpr TextureLoadFlags TEX_LOAD_FLAG_GEN_CPU_MIPMAP = 2;
 
 	inline std::optional<HostTexture> LoadTextureFromFile(
-		TextureCache &cache, std::filesystem::path path, TextureLoadFlags flags)
+		TextureCache &cache,
+		std::filesystem::path path,
+		TextureLoadFlags flags,
+		DXGI_FORMAT format)
 	{
 		if (path.empty() || !path.has_filename())
 		{
@@ -46,7 +49,7 @@ namespace h2r
 		desc.pixels = (uint8_t *)pixels;
 		desc.width = width;
 		desc.height = height;
-		desc.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+		desc.format = format;
 
 		HostTexture hostTexture = CreateHostTexture(desc);
 		stbi_image_free(desc.pixels);

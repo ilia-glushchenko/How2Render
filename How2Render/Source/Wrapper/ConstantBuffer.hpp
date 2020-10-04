@@ -19,6 +19,8 @@ namespace h2r
             float ssaoKernelRadius;
             float ssaoBias;
             XMVECTOR ssaoKernel[g_ssaoKernelSize];
+            uint32_t normalMappingEnabled;
+            XMFLOAT3 padd0;
         };
 
         struct PerFrame
@@ -149,6 +151,7 @@ namespace h2r
         buffer.ssaoKernelSize = 16;
         buffer.ssaoKernelRadius = 1.5f;
         buffer.ssaoBias = 0.0001f;
+        buffer.normalMappingEnabled = 1;
 
         for (int i = 0; i < g_ssaoKernelSize; ++i)
         {

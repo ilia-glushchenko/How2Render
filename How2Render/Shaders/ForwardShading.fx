@@ -1,7 +1,7 @@
 //--------------------------------------------------------------------------------------
 // Constants
 //--------------------------------------------------------------------------------------
-static const float3 SunDir = float3(-1, 1, 1);
+static const float3 SunDir = normalize(float3(-1, 1, 1));
 
 //--------------------------------------------------------------------------------------
 // Texture Samplers
@@ -9,7 +9,8 @@ static const float3 SunDir = float3(-1, 1, 1);
 Texture2D txAmbient : register(t0);
 Texture2D txAlbedo : register(t1);
 Texture2D txSpecular : register(t2);
-Texture2D txAO : register(t3);
+Texture2D txNormal : register(t3);
+Texture2D txAO : register(t4);
 
 SamplerState texSampler : register(s0);
 
@@ -39,6 +40,15 @@ cbuffer PerFrameCB : register(b2)
 	float4 CameraPos;
 };
 
+cbuffer InfrequentCB : register(b3)
+{
+	uint FinalOutputIndex;
+	uint SsaoKernelSize;
+	float SsaoKernelRadius;
+	float SsaoBias;
+	float4 SsaoKernel[64];
+	uint NormalMappingEnabled;
+};
 
 //--------------------------------------------------------------------------------------
 struct VS_INPUT
@@ -63,9 +73,10 @@ struct PS_INPUT
 PS_INPUT VS(VS_INPUT input)
 {
 	PS_INPUT output = (PS_INPUT)0;
-	matrix MVP = mul(mul(Proj, View), World);
-	output.Pos = mul(MVP, float4(input.Pos, 1.f));
-	output.Normal = input.Normal;
+
+	matrix WVP = mul(mul(Proj, View), World);
+	output.Pos = mul(WVP, float4(input.Pos, 1.f));
+	output.Normal =  input.Normal;
 	output.Tex = input.Tex;
 	output.WorldPos = mul(World, float4(input.Pos, 1)).xyz;
 	output.Pos2 = output.Pos;
@@ -73,14 +84,31 @@ PS_INPUT VS(VS_INPUT input)
 }
 
 //--------------------------------------------------------------------------------------
-// Pixel Shader
+// Christian Schuler, "Normal Mapping without Precomputed Tangents", ShaderX 5, Chapter 2.6.
+// http://www.thetenthplanet.de/archives/1180
 //--------------------------------------------------------------------------------------
+float3x3 cotangentFrame(float3 N, float3 p, float2 uv)
+{
+	float3 dp1 = ddx(p);
+	float3 dp2 = ddy(p);
+	float2 duv1 = ddx(uv);
+	float2 duv2 = ddy(uv);
+
+	float3 dp2perp = cross(dp2, N);
+	float3 dp1perp = cross(N, dp1);
+	float3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+	float3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+	float invmax = 1. / sqrt(max(dot(T, T), dot(B, B)));
+	return float3x3(T * invmax, B * invmax, N);
+}
+
 float4 PS(PS_INPUT input) : SV_Target
 {
 	float3 ambient = txAmbient.Sample(texSampler, input.Tex).rgb;
 	float4 albedo = txAlbedo.Sample(texSampler, input.Tex).rgba;
 	float3 specular = txSpecular.Sample(texSampler, input.Tex).rgb;
-
+	float3 micronormal = txNormal.Sample(texSampler, input.Tex).rgb;
 	float2 texCoordSS = float2(
 		0.5 + (input.Pos2.x / input.Pos2.w * 0.5),
 		0.5 - (input.Pos2.y / input.Pos2.w * 0.5)
@@ -88,6 +116,19 @@ float4 PS(PS_INPUT input) : SV_Target
 	float ao = txAO.Sample(texSampler, texCoordSS).r;
 
 	float3 n = normalize(input.Normal);
+	if (NormalMappingEnabled)
+	{
+		// Compute per-pixel cotangent frame
+		float3x3 TBN = cotangentFrame(n, input.WorldPos, input.Tex);
+
+		// In terms of normal maps, the difference result in how the green channel of a RGB texture should be interpreted.
+		// OpenGL expects the first pixel to be at the bottom while DirectX expects it to be at the top
+		// https://docs.substance3d.com/bake/what-is-the-difference-between-the-opengl-and-directx-normal-format-182256965.html
+		micronormal.y = 1. - micronormal.y;
+		// Transform normal from texture space to object space
+		n = mul(micronormal * 2. - 1., TBN);
+	}
+
 	float3 v = normalize(CameraPos.xyz - input.WorldPos);
 	float3 l = normalize(SunDir);
 

@@ -73,6 +73,7 @@ namespace h2r
         hostBuffers.infrequent.ssaoKernelRadius = states.ssaoKernelRadius;
         hostBuffers.infrequent.ssaoKernelSize = states.ssaoKernelSize;
         hostBuffers.infrequent.ssaoBias = states.ssaoBias;
+        hostBuffers.infrequent.normalMappingEnabled = static_cast<uint32_t>(states.normalMappingEnabled);
 
         context.pImmediateContext->UpdateSubresource(deviceBuffers.pInfrequentCB, 0, nullptr, &hostBuffers.infrequent, 0, 0);
     }
@@ -101,7 +102,7 @@ namespace h2r
         DeviceConstBuffers const &deviceBuffers,
         HostConstBuffers &hostBuffers)
     {
-        ID3D11ShaderResourceView *shaderResourceViews[3] = {};
+        ID3D11ShaderResourceView *shaderResourceViews[4] = {};
 
         if (mesh.materialId != InvalidMaterialId)
         {
@@ -110,6 +111,7 @@ namespace h2r
             shaderResourceViews[0] = material.ambientTexture.shaderResourceView;
             shaderResourceViews[1] = material.albedoTexture.shaderResourceView;
             shaderResourceViews[2] = material.specularTexture.shaderResourceView;
+            shaderResourceViews[3] = material.normalTexture.shaderResourceView;
 
             hostBuffers.perMaterial.ambient = material.scalarAmbient;
             hostBuffers.perMaterial.diffuse = material.scalarDiffuse;

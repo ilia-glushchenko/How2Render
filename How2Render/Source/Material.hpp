@@ -21,6 +21,7 @@ namespace h2r
 		HostTexture ambientTexture;
 		HostTexture albedoTexture;
 		HostTexture specularTexture;
+		HostTexture normalTexture;
 		XMFLOAT3 scalarAmbient = {};
 		XMFLOAT3 scalarDiffuse = {};
 		XMFLOAT3 scalarSpecular = {};
@@ -34,6 +35,7 @@ namespace h2r
 		DeviceTexture ambientTexture;
 		DeviceTexture albedoTexture;
 		DeviceTexture specularTexture;
+		DeviceTexture normalTexture;
 		XMFLOAT3 scalarAmbient = {};
 		XMFLOAT3 scalarDiffuse = {};
 		XMFLOAT3 scalarSpecular = {};
@@ -97,6 +99,24 @@ namespace h2r
 				if (texture)
 				{
 					deviceMaterial.specularTexture = texture.value();
+					CacheDeviceTexture(cache, texture.value());
+				}
+			}
+		}
+
+		{
+			auto [isTextureCached, cachedTexture] = FindCachedDeviceTexture(cache, hostMaterial.normalTexture.path);
+			if (isTextureCached)
+			{
+				deviceMaterial.normalTexture = cachedTexture;
+			}
+			else if (!hostMaterial.normalTexture.pixels.empty())
+			{
+				desc.hostTexture = hostMaterial.normalTexture;
+				auto texture = CreateDeviceTexture(context, desc);
+				if (texture)
+				{
+					deviceMaterial.normalTexture = texture.value();
 					CacheDeviceTexture(cache, texture.value());
 				}
 			}

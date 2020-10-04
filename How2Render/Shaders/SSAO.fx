@@ -31,6 +31,7 @@ cbuffer InfrequentCB : register(b3)
     float SsaoKernelRadius;
     float SsaoBias;
     float4 SsaoKernel[64];
+    uint NormalMappingEnabled;
 };
 
 //--------------------------------------------------------------------------------------

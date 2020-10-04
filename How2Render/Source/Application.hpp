@@ -38,6 +38,7 @@ namespace h2r
             bool drawTransparent = true;
             bool drawTranslucent = true;
 
+            bool normalMappingEnabled = true;
             bool ssaoEnabled = true;
             bool ssaoBlurEnabled = true;
             int32_t ssaoKernelSize = 16;

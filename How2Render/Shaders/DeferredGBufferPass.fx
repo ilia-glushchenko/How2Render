@@ -88,8 +88,8 @@ PS_OUTPUT PS(PS_INPUT input)
 
 	// GBuffer Layout
 	//     8        |       8       |       8       |      8
-	// Ambient.R    | Ambient.G     | Ambient.B     | Normal.X  | RGBA8_UNORM
-	// Diffuse.R    | Diffuse.G     | Diffuse.B     | Normal.Y  | RGBA8_UNORM
+	// Ambient.R    | Ambient.G     |               |           | RG8_UNORM
+	// Diffuse.R    | Diffuse.G     | Diffuse.B     | Ambient.B | RGBA8_UNORM
 	// Specular.R   | Specular.G    | Specular.B    | Shininess | RGBA8_UNORM
 
 	output.Ambient = ambient.rg;

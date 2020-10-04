@@ -1984,6 +1984,14 @@ void LoadMtl(std::map<std::string, int> *material_map,
       continue;
     }
 
+	// displacement texture
+	if ((0 == strncmp(token, "map_Disp", 8)) && IS_SPACE(token[8])) {
+		token += 8;
+		ParseTextureNameAndOption(&(material.displacement_texname),
+			&(material.displacement_texopt), token);
+		continue;
+	}
+
     // reflection map
     if ((0 == strncmp(token, "refl", 4)) && IS_SPACE(token[4])) {
       token += 5;

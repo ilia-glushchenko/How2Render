@@ -60,7 +60,7 @@ namespace h2r
         });
     }
 
-    inline void DrawUI(
+    inline bool DrawUI(
         Window const &window,
         Context const &context,
         DeviceConstBuffers const &cbuffersDevice,
@@ -100,6 +100,7 @@ namespace h2r
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
+            isInputChanged |= ImGui::Checkbox("Normal Mapping", &states.normalMappingEnabled);
             isInputChanged |= ImGui::Checkbox("SSAO", &states.ssaoEnabled);
             isInputChanged |= ImGui::Checkbox("SSAO blur", &states.ssaoBlurEnabled);
             isInputChanged |= ImGui::SliderInt("SSAO kernel", &states.ssaoKernelSize, 1, g_ssaoKernelSize);
@@ -121,11 +122,9 @@ namespace h2r
                 reinterpret_cast<int *>(&states.finalOutput),
                 s_outputTypeNames,
                 static_cast<uint32_t>(
-                    states.shadingType == Application::eShadingType::Deferred 
-                    ? Application::eFinalOutput::Count
-                    : Application::eFinalOutput::gBufferAmbient
-                )
-            );
+                    states.shadingType == Application::eShadingType::Deferred
+                        ? Application::eFinalOutput::Count
+                        : Application::eFinalOutput::gBufferAmbient));
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -133,12 +132,9 @@ namespace h2r
             ImGui::End();
         }
 
-        if (isInputChanged)
-        {
-            UpdateInfrequentConstantBuffers(context, states, cbuffersDevice, cbuffersHost);
-        }
-
         EndDrawUI();
+
+        return isInputChanged;
     }
 
     inline void Present(
@@ -248,7 +244,10 @@ namespace h2r
             UnbindRenderPass(app.context, pipeline.debug);
 
             BindRenderPass(app.context, pipeline.ui);
-            DrawUI(window, app.context, app.shaders.cbuffersDevice, app.shaders.cbuffersHost, app.states, camera);
+            if (DrawUI(window, app.context, app.shaders.cbuffersDevice, app.shaders.cbuffersHost, app.states, camera))
+            {
+                UpdateInfrequentConstantBuffers(app.context, app.states, app.shaders.cbuffersDevice, app.shaders.cbuffersHost);
+            }
             UnbindRenderPass(app.context, pipeline.ui);
 
             Present(app.context, app.swapchain, pipelineTextures.debug.texture, app.swapchain.renderTargetTexture);
